@@ -16,24 +16,28 @@ const char* glsl_version = "#version 330";
 
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
+"layout (location = 1) in vec3 aColour;\n"
+"out vec3 vertexColour;\n"
 "void main()\n"
 "{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+"   gl_Position = vec4(aPos, 1.0);\n"
+"   vertexColour = aColour;\n"
 "}\0";
 
-const char* fragmentShaderSource_orange = "#version 330 core\n"
+const char* fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColour;\n"
+"in vec3 vertexColour;\n"
 "void main()\n"
 "{\n"
-"   FragColour = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+"   FragColour = vec4(vertexColour, 1.0);\n"
 "}\0";
 
-const char* fragmentShaderSource_yellow = "#version 330 core\n"
-"out vec4 FragColour;\n"
-"void main()\n"
-"{\n"
-"   FragColour = vec4(1.0f, 1.0f, 0.0f, 1.0f);\n"
-"}\0";
+std::vector<float> vertices = {
+	// positions         // colors
+	 0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
+	-0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
+	 0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top 
+};
 
 static void glfw_error_callback(int error, const char* description);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -51,32 +55,21 @@ void RenderImGui(bool* showImGui, ImVec4* clear_color);
 int main() {
 	GLFWwindow* window;
 
-	assert(window = InitWindow());
-	InitImGUI(&window);
+	GLuint VAO;
+	GLuint shaderProgram;
 
-	GLuint VAO1;
-	GLuint VAO2;
-	std::vector<float> vertices1{
-		-0.8f,  -0.5f, 0.0f,
-		-0.4f,   0.5f, 0.0f,
-		 0.0f,  -0.5f, 0.0f
-	};
-	std::vector<float> vertices2{
-		0.0f,  -0.5f, 0.0f,
-		0.4f,   0.5f, 0.0f,
-		0.8f,  -0.5f, 0.0f
-	};
-
-	GLuint shaderProgram_orange;
-	GLuint shaderProgram_yellow;
-
-	InitVertexConfig(&VAO1, vertices1);
-	InitVertexConfig(&VAO2, vertices2);
-	InitShaders(&shaderProgram_orange, vertexShaderSource, fragmentShaderSource_orange);
-	InitShaders(&shaderProgram_yellow, vertexShaderSource, fragmentShaderSource_yellow);
+	int vertexColourLocation;
+	float greenValue;
 
 	bool showImGui;
 	ImVec4 clear_color = ImVec4(0.2f, 0.3f, 0.3f, 1.0f);
+
+	assert(window = InitWindow());
+	InitImGUI(&window);
+
+	InitVertexConfig(&VAO, vertices);
+	InitShaders(&shaderProgram, vertexShaderSource, fragmentShaderSource);
+	vertexColourLocation = glGetUniformLocation(shaderProgram, "ourColour");
 
 	while (!glfwWindowShouldClose(window)) {
 		// input
@@ -87,9 +80,11 @@ int main() {
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		greenValue = (sin(glfwGetTime()) / 2.0f) + 0.5f;
+		glUniform4f(vertexColourLocation, 0.0f, greenValue, 0.0f, 1.0f);
+
 		// rendering
-		RenderTriangle(&VAO1, &shaderProgram_orange);
-		RenderTriangle(&VAO2, &shaderProgram_yellow);
+		RenderTriangle(&VAO, &shaderProgram);
 		RenderImGui(&showImGui, &clear_color);
 
 		// check and call events and swap the buffers
@@ -166,7 +161,10 @@ void InitVertexConfig(GLuint* VAO, std::vector<float> vertices) {
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 }
 
 
@@ -209,14 +207,13 @@ void InitShaders(GLuint* shaderProgram, const char* vertexShaderSource, const ch
 		exit(1);
 	}
 
+
+	glUseProgram(*shaderProgram);
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 }
 
 void RenderTriangle(GLuint* VAO, GLuint* shaderProgram) {
-	glUseProgram(*shaderProgram);
-	glBindVertexArray(*VAO);
-	glUseProgram(*shaderProgram);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
