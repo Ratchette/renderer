@@ -141,6 +141,7 @@
     <ClCompile Include="imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="shaders\shader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h" />
@@ -152,6 +153,11 @@
     <ClInclude Include="imgui\imstb_rectpack.h" />
     <ClInclude Include="imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imstb_truetype.h" />
+    <ClInclude Include="shaders\shader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\shader.fs" />
+    <None Include="shaders\shader.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

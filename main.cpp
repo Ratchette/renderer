@@ -3,6 +3,8 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 
+#include "shaders/shader.h"
+
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
 
@@ -13,24 +15,8 @@
 
 
 const char* glsl_version = "#version 330";
-
-const char* vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"layout (location = 1) in vec3 aColour;\n"
-"out vec3 vertexColour;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(aPos, 1.0);\n"
-"   vertexColour = aColour;\n"
-"}\0";
-
-const char* fragmentShaderSource = "#version 330 core\n"
-"out vec4 FragColour;\n"
-"in vec3 vertexColour;\n"
-"void main()\n"
-"{\n"
-"   FragColour = vec4(vertexColour, 1.0);\n"
-"}\0";
+const char* vertex_shader_file = "shaders/shader.vs";
+const char* fragment_shader_file = "shaders/shader.fs";
 
 std::vector<float> vertices = {
 	// positions         // colors
@@ -46,19 +32,15 @@ GLFWwindow* InitWindow();
 void InitImGUI(GLFWwindow** window);
 
 void InitVertexConfig(GLuint* VAO, std::vector<float> vertices);
-void InitShaders(GLuint* shaderProgram, const char* vertexShaderSource, const char* fragmentShaderSource);
 
 void ProcessInput(GLFWwindow* window);
-void RenderTriangle(GLuint* VAO, GLuint* shaderProgram);
+void RenderTriangle();
 void RenderImGui(bool* showImGui, ImVec4* clear_color);
 
 int main() {
 	GLFWwindow* window;
 
-	GLuint VAO;
-	GLuint shaderProgram;
-
-	int vertexColourLocation;
+	GLuint VAO; 
 	float greenValue;
 
 	bool showImGui;
@@ -68,8 +50,8 @@ int main() {
 	InitImGUI(&window);
 
 	InitVertexConfig(&VAO, vertices);
-	InitShaders(&shaderProgram, vertexShaderSource, fragmentShaderSource);
-	vertexColourLocation = glGetUniformLocation(shaderProgram, "ourColour");
+	Shader shader(vertex_shader_file, fragment_shader_file);
+	shader.use();
 
 	while (!glfwWindowShouldClose(window)) {
 		// input
@@ -81,10 +63,10 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		greenValue = (sin(glfwGetTime()) / 2.0f) + 0.5f;
-		glUniform4f(vertexColourLocation, 0.0f, greenValue, 0.0f, 1.0f);
+		shader.setFloat4("greenColour", 0.0f, greenValue, 0.0f, 1.0f);
 
 		// rendering
-		RenderTriangle(&VAO, &shaderProgram);
+		RenderTriangle();
 		RenderImGui(&showImGui, &clear_color);
 
 		// check and call events and swap the buffers
@@ -167,53 +149,7 @@ void InitVertexConfig(GLuint* VAO, std::vector<float> vertices) {
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 }
 
-
-void InitShaders(GLuint* shaderProgram, const char* vertexShaderSource, const char* fragmentShaderSource) {
-	GLuint vertexShader;
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glCompileShader(vertexShader);
-
-	int success;
-	char infoLog[512];
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-		exit(1);
-	}
-
-	GLuint fragmentShader;
-	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
-
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-		exit(1);
-	}
-
-	*shaderProgram = glCreateProgram();
-	glAttachShader(*shaderProgram, vertexShader);
-	glAttachShader(*shaderProgram, fragmentShader);
-	glLinkProgram(*shaderProgram);
-
-	glGetProgramiv(*shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(*shaderProgram, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-		exit(1);
-	}
-
-
-	glUseProgram(*shaderProgram);
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-}
-
-void RenderTriangle(GLuint* VAO, GLuint* shaderProgram) {
+void RenderTriangle() {
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
