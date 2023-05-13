@@ -41,7 +41,6 @@ int main() {
 	GLFWwindow* window;
 
 	GLuint VAO; 
-	float greenValue;
 
 	bool showImGui;
 	ImVec4 clear_color = ImVec4(0.2f, 0.3f, 0.3f, 1.0f);
@@ -61,9 +60,6 @@ int main() {
 		// clear screen
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT);
-
-		greenValue = (sin(glfwGetTime()) / 2.0f) + 0.5f;
-		shader.setFloat4("greenColour", 0.0f, greenValue, 0.0f, 1.0f);
 
 		// rendering
 		RenderTriangle();
