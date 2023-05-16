@@ -24,6 +24,8 @@ const char* FRAGMENT_SHADER_FILE = "shaders/shader_fragment.glsl";
 const char* BOX_TEXTURE_FILE = "assets/container.jpg";
 const char* SIMILEY_TEXTURE_FILE = "assets/awesomeface.png";
 
+static bool showImGui = true;
+
 std::vector<float> vertices = {
 	// positions          // colors           // texture coords
 	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
@@ -38,6 +40,7 @@ std::vector<int> indices = {
 };
 
 static void glfw_error_callback(int error, const char* description);
+void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
 GLFWwindow* InitWindow();
@@ -48,7 +51,7 @@ void InitTexture(GLuint* texture, const char* filepath, GLenum format);
 
 void ProcessInput(GLFWwindow* window);
 void RenderTriangle();
-void RenderImGui(bool* showImGui, ImVec4* clear_color);
+void RenderImGui(ImVec4* clear_color, float* texture_mix);
 
 int main() {
 	GLFWwindow* window;
@@ -57,11 +60,12 @@ int main() {
 	GLuint texture0;
 	GLuint texture1;
 
-	bool showImGui;
 	ImVec4 clear_color = ImVec4(0.2f, 0.3f, 0.3f, 1.0f);
+
 
 	assert(window = InitWindow());
 	InitImGUI(&window);
+	glfwSetKeyCallback(window, glfw_key_callback);
 
 	InitVertexConfig(&VAO, vertices, indices);
 
@@ -80,6 +84,9 @@ int main() {
 	shader.setInt("texture0", 0);
 	shader.setInt("texture1", 1);
 
+	float texture_mix = 0.2f;
+	shader.setFloat("texture_mix", texture_mix);
+
 	while (!glfwWindowShouldClose(window)) {
 		// input
 		glfwPollEvents();
@@ -91,7 +98,8 @@ int main() {
 
 		// rendering
 		RenderTriangle();
-		RenderImGui(&showImGui, &clear_color);
+		RenderImGui(&clear_color, &texture_mix);
+		shader.setFloat("texture_mix", texture_mix);
 
 		// check and call events and swap the buffers
 		glfwSwapBuffers(window);
@@ -197,33 +205,33 @@ void InitTexture(GLuint* texture, const char* filepath, GLenum format) {
 	stbi_image_free(data);
 }
 
-void ProcessInput(GLFWwindow* window) {
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-		glfwSetWindowShouldClose(window, true);
-	}
-}
+void ProcessInput(GLFWwindow* window) {}
 
 void RenderTriangle() {
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
-void RenderImGui(bool* showImGui, ImVec4* clear_color) {
+void RenderImGui(ImVec4* clear_color, float* texture_mix) {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	// ImGui window
-	if (*showImGui) {
+	if (showImGui) {
 		ImGuiIO& io = ImGui::GetIO();
-		ImGui::Begin("ImGui", showImGui);
-		ImGui::ColorEdit3("clear color", (float*)clear_color);
-		ImGui::NewLine();
-		if (ImGui::Button("Lines")) {
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Fill")) {
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+		ImGui::Begin("ImGui", &showImGui);
+		{
+			ImGui::LabelText("label", "Value");
+			ImGui::ColorEdit3("Background Colour", (float*)clear_color);
+			ImGui::SliderFloat("Texture Mixture", texture_mix, 0.0f, 1.0f, "ratio = %.3f");
+
+			if (ImGui::Button("Fill")) {
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Lines")) {
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			}
 		}
 		ImGui::End();
 	}
@@ -239,6 +247,16 @@ void RenderImGui(bool* showImGui, ImVec4* clear_color) {
 
 static void glfw_error_callback(int error, const char* description) {
 	fprintf(stderr, "GLFW Error %d: %s\n", error, description);
+}
+
+void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+		glfwSetWindowShouldClose(window, true);
+	}
+
+	if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
+		showImGui = !(showImGui);
+	}
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
