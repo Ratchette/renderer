@@ -18,8 +18,11 @@
 
 
 const char* glsl_version = "#version 330";
-const char* vertex_shader_file = "shaders/shader_vertex.glsl";
-const char* fragment_shader_file = "shaders/shader_fragment.glsl";
+const char* VERTEX_SHADER_FILE = "shaders/shader_vertex.glsl";
+const char* FRAGMENT_SHADER_FILE = "shaders/shader_fragment.glsl";
+
+const char* BOX_TEXTURE_FILE = "assets/container.jpg";
+const char* SIMILEY_TEXTURE_FILE = "assets/awesomeface.png";
 
 std::vector<float> vertices = {
 	// positions          // colors           // texture coords
@@ -41,7 +44,7 @@ GLFWwindow* InitWindow();
 void InitImGUI(GLFWwindow** window);
 
 void InitVertexConfig(GLuint* VAO, std::vector<float> vertices, std::vector<int> indices);
-void InitTexture(GLuint* texture);
+void InitTexture(GLuint* texture, const char* filepath, GLenum format);
 
 void ProcessInput(GLFWwindow* window);
 void RenderTriangle();
@@ -51,7 +54,8 @@ int main() {
 	GLFWwindow* window;
 
 	GLuint VAO; 
-	GLuint texture;
+	GLuint texture0;
+	GLuint texture1;
 
 	bool showImGui;
 	ImVec4 clear_color = ImVec4(0.2f, 0.3f, 0.3f, 1.0f);
@@ -60,9 +64,21 @@ int main() {
 	InitImGUI(&window);
 
 	InitVertexConfig(&VAO, vertices, indices);
-	InitTexture(&texture);
-	Shader shader(vertex_shader_file, fragment_shader_file);
+
+	InitTexture(&texture0, BOX_TEXTURE_FILE, GL_RGB);
+	InitTexture(&texture1, SIMILEY_TEXTURE_FILE, GL_RGBA);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture0);
+	
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, texture1);
+
+
+	Shader shader(VERTEX_SHADER_FILE, FRAGMENT_SHADER_FILE);
 	shader.use();
+	shader.setInt("texture0", 0);
+	shader.setInt("texture1", 1);
 
 	while (!glfwWindowShouldClose(window)) {
 		// input
@@ -158,29 +174,27 @@ void InitVertexConfig(GLuint* VAO, std::vector<float> vertices, std::vector<int>
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 }
 
-void InitTexture(GLuint* texture) {
-	const char* TEXTURE_FILEPATH = "assets/container.jpg";
-
+void InitTexture(GLuint* texture, const char* filepath, GLenum format) {
 	glGenTextures(1, texture);
 	glBindTexture(GL_TEXTURE_2D, *texture);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	int width, height, nrChannels;
-	unsigned char* data = stbi_load(TEXTURE_FILEPATH, &width, &height, &nrChannels, 0);
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char* data = stbi_load(filepath, &width, &height, &nrChannels, 0);
 	if (!data) {
-		std::cout << "Failed to load texture " << TEXTURE_FILEPATH << std::endl;
+		std::cout << "Failed to load texture " << filepath << std::endl;
 		exit(1);
 	}
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 	glGenerateMipmap(GL_TEXTURE_2D);
+
 	stbi_image_free(data);
-
-
 }
 
 void ProcessInput(GLFWwindow* window) {
