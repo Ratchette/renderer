@@ -3,6 +3,9 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include "shaders/shader.h"
 
 #include <glad/glad.h> 
@@ -15,14 +18,20 @@
 
 
 const char* glsl_version = "#version 330";
-const char* vertex_shader_file = "shaders/shader.vs";
-const char* fragment_shader_file = "shaders/shader.fs";
+const char* vertex_shader_file = "shaders/shader_vertex.glsl";
+const char* fragment_shader_file = "shaders/shader_fragment.glsl";
 
 std::vector<float> vertices = {
-	// positions         // colors
-	 0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
-	-0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
-	 0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top 
+	// positions          // colors           // texture coords
+	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+};
+
+std::vector<int> indices = {
+		0, 1, 3, // first triangle
+		1, 2, 3  // second triangle
 };
 
 static void glfw_error_callback(int error, const char* description);
@@ -31,7 +40,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 GLFWwindow* InitWindow();
 void InitImGUI(GLFWwindow** window);
 
-void InitVertexConfig(GLuint* VAO, std::vector<float> vertices);
+void InitVertexConfig(GLuint* VAO, std::vector<float> vertices, std::vector<int> indices);
+void InitTexture(GLuint* texture);
 
 void ProcessInput(GLFWwindow* window);
 void RenderTriangle();
@@ -41,6 +51,7 @@ int main() {
 	GLFWwindow* window;
 
 	GLuint VAO; 
+	GLuint texture;
 
 	bool showImGui;
 	ImVec4 clear_color = ImVec4(0.2f, 0.3f, 0.3f, 1.0f);
@@ -48,7 +59,8 @@ int main() {
 	assert(window = InitWindow());
 	InitImGUI(&window);
 
-	InitVertexConfig(&VAO, vertices);
+	InitVertexConfig(&VAO, vertices, indices);
+	InitTexture(&texture);
 	Shader shader(vertex_shader_file, fragment_shader_file);
 	shader.use();
 
@@ -121,6 +133,55 @@ void InitImGUI(GLFWwindow** window) {
 	ImGui_ImplOpenGL3_Init(glsl_version);
 }
 
+void InitVertexConfig(GLuint* VAO, std::vector<float> vertices, std::vector<int> indices) {
+
+	glGenVertexArrays(1, VAO);
+	glBindVertexArray(*VAO);
+
+	GLuint EBO;
+	glGenBuffers(1, &EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(float), indices.data(), GL_STATIC_DRAW);
+
+	GLuint VBO;
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(int), vertices.data(), GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+}
+
+void InitTexture(GLuint* texture) {
+	const char* TEXTURE_FILEPATH = "assets/container.jpg";
+
+	glGenTextures(1, texture);
+	glBindTexture(GL_TEXTURE_2D, *texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	int width, height, nrChannels;
+	unsigned char* data = stbi_load(TEXTURE_FILEPATH, &width, &height, &nrChannels, 0);
+	if (!data) {
+		std::cout << "Failed to load texture " << TEXTURE_FILEPATH << std::endl;
+		exit(1);
+	}
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	stbi_image_free(data);
+
+
+}
 
 void ProcessInput(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
@@ -128,25 +189,8 @@ void ProcessInput(GLFWwindow* window) {
 	}
 }
 
-void InitVertexConfig(GLuint* VAO, std::vector<float> vertices) {
-
-	glGenVertexArrays(1, VAO);
-	glBindVertexArray(*VAO);
-
-	GLuint VBO;
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-}
-
 void RenderTriangle() {
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
 void RenderImGui(bool* showImGui, ImVec4* clear_color) {

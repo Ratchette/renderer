@@ -19,6 +19,9 @@
     <Filter Include="Source Files\shaders">
       <UniqueIdentifier>{16e4b6b9-95ad-4ea5-927d-ce6cea5c2aba}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\textures">
+      <UniqueIdentifier>{ea7f1d89-6959-4928-a7db-218376a40b92}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -83,13 +86,21 @@
     <ClInclude Include="shaders\shader.h">
       <Filter>Source Files\shaders</Filter>
     </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\shader.fs">
+    <None Include="shaders\shader_fragment.glsl">
       <Filter>Source Files\shaders</Filter>
     </None>
-    <None Include="shaders\shader.vs">
+    <None Include="shaders\shader_vertex.glsl">
       <Filter>Source Files\shaders</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\container.jpg">
+      <Filter>Resource Files\textures</Filter>
+    </Image>
   </ItemGroup>
 </Project>
