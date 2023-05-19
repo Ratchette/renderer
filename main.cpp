@@ -75,6 +75,19 @@ std::vector<float> vertices = {
 	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
 
+std::vector<glm::vec3> cubePositions = {
+	glm::vec3(0.0f,  0.0f,  0.0f),
+	glm::vec3(2.0f,  5.0f, -15.0f),
+	glm::vec3(-1.5f, -2.2f, -2.5f),
+	glm::vec3(-3.8f, -2.0f, -12.3f),
+	glm::vec3(2.4f, -0.4f, -3.5f),
+	glm::vec3(-1.7f,  3.0f, -7.5f),
+	glm::vec3(1.3f, -2.0f, -2.5f),
+	glm::vec3(1.5f,  2.0f, -2.5f),
+	glm::vec3(1.5f,  0.2f, -1.5f),
+	glm::vec3(-1.3f,  1.0f, -1.5f)
+};
+
 static void glfw_error_callback(int error, const char* description);
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -86,7 +99,7 @@ void InitVertexConfig(GLuint* VAO, std::vector<float> vertices);
 void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum texture_unit);
 void InitTransforms(Shader* shader);
 
-void UpdateTransforms(Shader* shader);
+void UpdateTransforms(Shader* shader, glm::vec3 position, int index);
 void ProcessInput(GLFWwindow* window);
 void RenderTriangle();
 void RenderImGui(ImVec4* clear_color, float* texture_mix);
@@ -125,15 +138,15 @@ int main() {
 		glfwPollEvents();
 		ProcessInput(window);
 
-		// Physics
-		UpdateTransforms(&shader);
-
 		// clear screen
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// rendering
-		RenderTriangle();
+		for (int i = 0; i < cubePositions.size(); i++) {
+			UpdateTransforms(&shader, cubePositions[i], i);
+			RenderTriangle();
+		}
 		RenderImGui(&clear_color, &texture_mix);
 		shader.setFloat("texture_mix", texture_mix);
 
@@ -251,10 +264,13 @@ void InitTransforms(Shader* shader) {
 	projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 	shader->setMat4("perspectiveTransform", projection);
 }
-void UpdateTransforms(Shader* shader) {
+
+void UpdateTransforms(Shader* shader, glm::vec3 position, int index) {
 	glm::mat4 model = glm::mat4(1.0f);
-		
-	model = glm::rotate(model, (float) glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+	model = glm::translate(model, position);
+
+	float angle = 20.0f * index;
+	model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
 	shader->setMat4("modelTransform", model);
 }
 
