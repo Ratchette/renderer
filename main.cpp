@@ -31,16 +31,48 @@ const char* SIMILEY_TEXTURE_FILE = "assets/awesomeface.png";
 static bool showImGui = true;
 
 std::vector<float> vertices = {
-	// positions                    // texture coords
-	 0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
-	 0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
-	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
-	-0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
-};
+	// positions          // texture coords
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
-std::vector<int> indices = {
-		0, 1, 3, // first triangle
-		1, 2, 3  // second triangle
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
 
 static void glfw_error_callback(int error, const char* description);
@@ -50,9 +82,11 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 GLFWwindow* InitWindow();
 void InitImGUI(GLFWwindow** window);
 
-void InitVertexConfig(GLuint* VAO, std::vector<float> vertices, std::vector<int> indices);
+void InitVertexConfig(GLuint* VAO, std::vector<float> vertices);
 void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum texture_unit);
+void InitTransforms(Shader* shader);
 
+void UpdateTransforms(Shader* shader);
 void ProcessInput(GLFWwindow* window);
 void RenderTriangle();
 void RenderImGui(ImVec4* clear_color, float* texture_mix);
@@ -70,10 +104,11 @@ int main() {
 	InitImGUI(&window);
 	glfwSetKeyCallback(window, glfw_key_callback);
 
-	InitVertexConfig(&VAO, vertices, indices);
+	InitVertexConfig(&VAO, vertices);
 
 	InitTexture(&texture0, BOX_TEXTURE_FILE, GL_RGB, GL_TEXTURE0);
 	InitTexture(&texture1, SIMILEY_TEXTURE_FILE, GL_RGBA, GL_TEXTURE1);
+
 
 	Shader shader(VERTEX_SHADER_FILE, FRAGMENT_SHADER_FILE);
 	shader.use();
@@ -83,16 +118,19 @@ int main() {
 	float texture_mix = 0.2f;
 	shader.setFloat("texture_mix", texture_mix);
 
+	InitTransforms(&shader);
+
 	while (!glfwWindowShouldClose(window)) {
 		// input
 		glfwPollEvents();
 		ProcessInput(window);
 
 		// Physics
+		UpdateTransforms(&shader);
 
 		// clear screen
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// rendering
 		RenderTriangle();
@@ -155,15 +193,9 @@ void InitImGUI(GLFWwindow** window) {
 	ImGui_ImplOpenGL3_Init(glsl_version);
 }
 
-void InitVertexConfig(GLuint* VAO, std::vector<float> vertices, std::vector<int> indices) {
-
+void InitVertexConfig(GLuint* VAO, std::vector<float> vertices) {
 	glGenVertexArrays(1, VAO);
 	glBindVertexArray(*VAO);
-
-	GLuint EBO;
-	glGenBuffers(1, &EBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(float), indices.data(), GL_STATIC_DRAW);
 
 	GLuint VBO;
 	glGenBuffers(1, &VBO);
@@ -201,10 +233,36 @@ void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum te
 	stbi_image_free(data);
 }
 
+void InitTransforms(Shader* shader) {
+	glEnable(GL_DEPTH_TEST);
+
+	// Transform into world coordinates
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	shader->setMat4("modelTransform", model);
+
+	// Transform into view coordinates
+	glm::mat4 view = glm::mat4(1.0f);
+	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+	shader->setMat4("viewTransform", view);
+
+	// Projection Matrix
+	glm::mat4 projection;
+	projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+	shader->setMat4("perspectiveTransform", projection);
+}
+void UpdateTransforms(Shader* shader) {
+	glm::mat4 model = glm::mat4(1.0f);
+		
+	model = glm::rotate(model, (float) glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+	shader->setMat4("modelTransform", model);
+}
+
+
 void ProcessInput(GLFWwindow* window) {}
 
 void RenderTriangle() {
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
 void RenderImGui(ImVec4* clear_color, float* texture_mix) {

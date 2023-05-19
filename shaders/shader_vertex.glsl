@@ -5,7 +5,11 @@ layout (location = 1) in vec2 aTexCoord;
 
 out vec2 texCoord;
 
+uniform mat4 modelTransform;
+uniform mat4 viewTransform;
+uniform mat4 perspectiveTransform;
+
 void main() {
-   gl_Position = vec4(aPos, 1.0f);
+   gl_Position = perspectiveTransform * viewTransform * modelTransform * vec4(aPos, 1.0f);
    texCoord = aTexCoord;
 }
