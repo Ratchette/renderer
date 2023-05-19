@@ -144,6 +144,9 @@
     <ClCompile Include="shaders\shader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="glm\glm.hpp" />
+    <ClInclude Include="glm\gtc\matrix_transform.hpp" />
+    <ClInclude Include="glm\gtc\type_ptr.hpp" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="imgui\imgui_impl_glfw.h" />

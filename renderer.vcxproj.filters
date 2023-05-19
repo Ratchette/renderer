@@ -22,6 +22,9 @@
     <Filter Include="Resource Files\textures">
       <UniqueIdentifier>{ea7f1d89-6959-4928-a7db-218376a40b92}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\glm">
+      <UniqueIdentifier>{b9fbdb44-fe8a-413c-b5aa-da68727c0a9d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -87,7 +90,16 @@
       <Filter>Source Files\shaders</Filter>
     </ClInclude>
     <ClInclude Include="stb_image.h">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="glm\glm.hpp">
+      <Filter>Header Files\glm</Filter>
+    </ClInclude>
+    <ClInclude Include="glm\gtc\matrix_transform.hpp">
+      <Filter>Header Files\glm</Filter>
+    </ClInclude>
+    <ClInclude Include="glm\gtc\type_ptr.hpp">
+      <Filter>Header Files\glm</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

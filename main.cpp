@@ -6,6 +6,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/type_ptr.hpp"
+
 #include "shaders/shader.h"
 
 #include <glad/glad.h> 
@@ -48,6 +52,8 @@ void InitImGUI(GLFWwindow** window);
 
 void InitVertexConfig(GLuint* VAO, std::vector<float> vertices, std::vector<int> indices);
 void InitTexture(GLuint* texture, const char* filepath, GLenum format);
+void InitTransform(Shader* shader);
+void UpdateTransform(Shader* shader);
 
 void ProcessInput(GLFWwindow* window);
 void RenderTriangle();
@@ -86,11 +92,16 @@ int main() {
 
 	float texture_mix = 0.2f;
 	shader.setFloat("texture_mix", texture_mix);
+	
+	InitTransform(&shader);
 
 	while (!glfwWindowShouldClose(window)) {
 		// input
 		glfwPollEvents();
 		ProcessInput(window);
+
+		// Physics
+		UpdateTransform(&shader);
 
 		// clear screen
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
@@ -203,6 +214,22 @@ void InitTexture(GLuint* texture, const char* filepath, GLenum format) {
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	stbi_image_free(data);
+}
+
+void InitTransform(Shader* shader) {
+	glm::mat4 transform = glm::mat4(1.0f);
+
+	transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
+	shader->setMat4("transform", transform);
+}
+
+void UpdateTransform(Shader* shader) {
+	glm::mat4 transform = glm::mat4(1.0f);
+
+	transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
+	transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+
+	shader->setMat4("transform", transform);
 }
 
 void ProcessInput(GLFWwindow* window) {}
