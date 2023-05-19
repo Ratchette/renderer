@@ -31,11 +31,11 @@ const char* SIMILEY_TEXTURE_FILE = "assets/awesomeface.png";
 static bool showImGui = true;
 
 std::vector<float> vertices = {
-	// positions          // colors           // texture coords
-	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+	// positions                    // texture coords
+	 0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
+	 0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
+	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
+	-0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left 
 };
 
 std::vector<int> indices = {
@@ -51,9 +51,7 @@ GLFWwindow* InitWindow();
 void InitImGUI(GLFWwindow** window);
 
 void InitVertexConfig(GLuint* VAO, std::vector<float> vertices, std::vector<int> indices);
-void InitTexture(GLuint* texture, const char* filepath, GLenum format);
-void InitTransform(Shader* shader);
-void UpdateTransform(Shader* shader);
+void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum texture_unit);
 
 void ProcessInput(GLFWwindow* window);
 void RenderTriangle();
@@ -68,22 +66,14 @@ int main() {
 
 	ImVec4 clear_color = ImVec4(0.2f, 0.3f, 0.3f, 1.0f);
 
-
 	assert(window = InitWindow());
 	InitImGUI(&window);
 	glfwSetKeyCallback(window, glfw_key_callback);
 
 	InitVertexConfig(&VAO, vertices, indices);
 
-	InitTexture(&texture0, BOX_TEXTURE_FILE, GL_RGB);
-	InitTexture(&texture1, SIMILEY_TEXTURE_FILE, GL_RGBA);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture0);
-	
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, texture1);
-
+	InitTexture(&texture0, BOX_TEXTURE_FILE, GL_RGB, GL_TEXTURE0);
+	InitTexture(&texture1, SIMILEY_TEXTURE_FILE, GL_RGBA, GL_TEXTURE1);
 
 	Shader shader(VERTEX_SHADER_FILE, FRAGMENT_SHADER_FILE);
 	shader.use();
@@ -92,8 +82,6 @@ int main() {
 
 	float texture_mix = 0.2f;
 	shader.setFloat("texture_mix", texture_mix);
-	
-	InitTransform(&shader);
 
 	while (!glfwWindowShouldClose(window)) {
 		// input
@@ -101,7 +89,6 @@ int main() {
 		ProcessInput(window);
 
 		// Physics
-		UpdateTransform(&shader);
 
 		// clear screen
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
@@ -184,16 +171,14 @@ void InitVertexConfig(GLuint* VAO, std::vector<float> vertices, std::vector<int>
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(int), vertices.data(), GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 }
 
-void InitTexture(GLuint* texture, const char* filepath, GLenum format) {
+void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum texture_unit) {
+	glActiveTexture(texture_unit);
 	glGenTextures(1, texture);
 	glBindTexture(GL_TEXTURE_2D, *texture);
 
@@ -214,22 +199,6 @@ void InitTexture(GLuint* texture, const char* filepath, GLenum format) {
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	stbi_image_free(data);
-}
-
-void InitTransform(Shader* shader) {
-	glm::mat4 transform = glm::mat4(1.0f);
-
-	transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
-	shader->setMat4("transform", transform);
-}
-
-void UpdateTransform(Shader* shader) {
-	glm::mat4 transform = glm::mat4(1.0f);
-
-	transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
-	transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
-
-	shader->setMat4("transform", transform);
 }
 
 void ProcessInput(GLFWwindow* window) {}
