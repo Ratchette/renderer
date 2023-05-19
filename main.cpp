@@ -99,7 +99,7 @@ void InitVertexConfig(GLuint* VAO, std::vector<float> vertices);
 void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum texture_unit);
 void InitTransforms(Shader* shader);
 
-void UpdateTransforms(Shader* shader, glm::vec3 position, int index);
+void UpdateTransforms(Shader* shader, glm::vec3 position, int index, bool rotate = false);
 void ProcessInput(GLFWwindow* window);
 void RenderTriangle();
 void RenderImGui(ImVec4* clear_color, float* texture_mix);
@@ -144,7 +144,7 @@ int main() {
 
 		// rendering
 		for (int i = 0; i < cubePositions.size(); i++) {
-			UpdateTransforms(&shader, cubePositions[i], i);
+			UpdateTransforms(&shader, cubePositions[i], i, (i%3 == 0));
 			RenderTriangle();
 		}
 		RenderImGui(&clear_color, &texture_mix);
@@ -265,11 +265,11 @@ void InitTransforms(Shader* shader) {
 	shader->setMat4("perspectiveTransform", projection);
 }
 
-void UpdateTransforms(Shader* shader, glm::vec3 position, int index) {
+void UpdateTransforms(Shader* shader, glm::vec3 position, int index, bool rotate) {
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, position);
 
-	float angle = 20.0f * index;
+	float angle = 20.0f * index + (rotate ? (float)glfwGetTime() : 0);
 	model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
 	shader->setMat4("modelTransform", model);
 }
