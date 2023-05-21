@@ -30,6 +30,19 @@ const char* SIMILEY_TEXTURE_FILE = "assets/awesomeface.png";
 
 static bool showImGui = true;
 
+static const float cameraSpeed = 2.5f;
+static glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+static glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+static glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+static float deltaTime = 0.0f;
+static float lastFrame = 0.0f;
+
+static bool upKeyDown = false;
+static bool downKeyDown = false;
+static bool leftKeyDown = false;
+static bool rightKeyDown = false;
+
 std::vector<float> vertices = {
 	// positions          // texture coords
 	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -97,7 +110,6 @@ void InitImGUI(GLFWwindow** window);
 
 void InitVertexConfig(GLuint* VAO, std::vector<float> vertices);
 void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum texture_unit);
-void InitCamera();
 void InitTransforms(Shader* shader);
 
 void UpdateTransforms(Shader* shader, glm::vec3 position, int index, bool rotate = false);
@@ -124,7 +136,6 @@ int main() {
 	InitTexture(&texture0, BOX_TEXTURE_FILE, GL_RGB, GL_TEXTURE0);
 	InitTexture(&texture1, SIMILEY_TEXTURE_FILE, GL_RGBA, GL_TEXTURE1);
 
-
 	Shader shader(VERTEX_SHADER_FILE, FRAGMENT_SHADER_FILE);
 	shader.use();
 	shader.setInt("texture0", 0);
@@ -133,12 +144,14 @@ int main() {
 	float texture_mix = 0.2f;
 	shader.setFloat("texture_mix", texture_mix);
 
-	InitCamera();
 	InitTransforms(&shader);
 
 	while (!glfwWindowShouldClose(window)) {
+		float currentFrame = (float)glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
 		// input
-		glfwPollEvents();
 		ProcessInput(window);
 
 		// clear screen
@@ -155,6 +168,7 @@ int main() {
 
 		// check and call events and swap the buffers
 		glfwSwapBuffers(window);
+		glfwPollEvents();
 	}
 
 	ImGui_ImplOpenGL3_Shutdown();
@@ -249,13 +263,6 @@ void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum te
 	stbi_image_free(data);
 }
 
-void InitCamera() {
-	glm::mat4 view = glm::lookAt(
-		glm::vec3(0.0f, 0.0f, 3.0f),
-		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 1.0f, 0.0f));
-}
-
 void InitTransforms(Shader* shader) {
 	glEnable(GL_DEPTH_TEST);
 
@@ -283,20 +290,29 @@ void UpdateTransforms(Shader* shader, glm::vec3 position, int index, bool rotate
 	model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
 	shader->setMat4("modelTransform", model);
 
-	const float radius = 10.0f;
-	float camX = sin(glfwGetTime()) * radius;
-	float camZ = cos(glfwGetTime()) * radius;
-
 	glm::mat4 view = glm::lookAt(
-		glm::vec3(camX, 0.0, camZ),
-		glm::vec3(0.0, 0.0, 0.0),
-		glm::vec3(0.0f, 1.0f, 0.0f)
+		cameraPos,
+		cameraPos + cameraFront,
+		cameraUp
 	);
 	shader->setMat4("viewTransform", view);
 }
 
 
-void ProcessInput(GLFWwindow* window) {}
+void ProcessInput(GLFWwindow* window) {
+	if (upKeyDown) {
+		cameraPos += cameraFront * cameraSpeed * deltaTime;
+	}
+	if (downKeyDown) {
+		cameraPos -= cameraFront * cameraSpeed * deltaTime;
+	}
+	if (leftKeyDown) {
+		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed * deltaTime;
+	}
+	if (rightKeyDown) {
+		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed * deltaTime;
+	}
+}
 
 void RenderTriangle() {
 	glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -347,6 +363,40 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
 
 	if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
 		showImGui = !(showImGui);
+	}
+
+	if (key == GLFW_KEY_W) {
+		if (action == GLFW_PRESS) {
+			upKeyDown = true;
+		} else if (action == GLFW_RELEASE) {
+			upKeyDown = false;
+		}
+	}
+
+	if (key == GLFW_KEY_S) {
+		if (action == GLFW_PRESS) {
+			downKeyDown = true;
+		} else if (action == GLFW_RELEASE) {
+			downKeyDown = false;
+		}
+	}
+
+	if (key == GLFW_KEY_A) {
+		if (action == GLFW_PRESS) {
+			leftKeyDown = true;
+		} else if (action == GLFW_RELEASE) {
+			leftKeyDown = false;
+		}
+	}
+
+	if (key == GLFW_KEY_D) {
+		if (action == GLFW_PRESS) {
+			rightKeyDown = true;
+		} else if (action == GLFW_RELEASE) {
+			rightKeyDown = false;
+		}
+
+
 	}
 }
 
