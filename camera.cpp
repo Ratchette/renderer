@@ -52,8 +52,6 @@ void Camera::_Move(float deltaTime) {
 	if (rightKeyDown) {
 		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * MOVE_SPEED * deltaTime;
 	}
-	
-	cameraPos.y = 0.0f;
 }
 
 void Camera::_Tilt(Shader* shader) {
