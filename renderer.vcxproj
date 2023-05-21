@@ -164,8 +164,11 @@
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\shader_fragment.glsl" />
-    <None Include="shaders\shader_vertex.glsl" />
+    <None Include="shaders\boxes_smiling.fs" />
+    <None Include="shaders\boxes_smiling.vs" />
+    <None Include="shaders\lighting_light.fs" />
+    <None Include="shaders\lighting_cube.fs" />
+    <None Include="shaders\lighting.vs" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\container.jpg" />

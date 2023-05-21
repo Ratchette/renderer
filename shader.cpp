@@ -1,6 +1,6 @@
 #include "shader.h"
 
-Shader::Shader() : Shader::Shader(Shader::VERTEX_SHADER_FILE, Shader::FRAGMENT_SHADER_FILE) {};
+Shader::Shader() : Shader::Shader(Shader::DEFAULT_VERTEX_SHADER_FILE, Shader::DEFAULT_FRAGMENT_SHADER_FILE) {};
 
 Shader::Shader(const char* vertexPath, const char* fragmentPath) {
 	std::string vertexCode;

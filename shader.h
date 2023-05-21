@@ -36,8 +36,8 @@ public:
 	void setMat4(const std::string& name, const glm::mat4& mat) const;
 
 private:
-	inline static const char* VERTEX_SHADER_FILE = "shaders/shader_vertex.glsl";
-	inline static const char* FRAGMENT_SHADER_FILE = "shaders/shader_fragment.glsl";
+	inline static const char* DEFAULT_VERTEX_SHADER_FILE = "shaders/boxes_smiling.vs";
+	inline static const char* DEFAULT_FRAGMENT_SHADER_FILE = "shaders/boxes_smiling.fs";
 };
 
 #endif SHADER_H

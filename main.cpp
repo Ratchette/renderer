@@ -113,21 +113,27 @@ void RenderImGui(Shader* shader, ImVec4* clear_color);
 
 int main() {
 	GLFWwindow* window;
+	assert(window = InitWindow());
 
 	GLuint VAO;
-	GLuint texture0;
-	GLuint texture1;
-
-	assert(window = InitWindow());
 	InitVertexConfig(&VAO, vertices);
-	InitTexture(&texture0, BOX_TEXTURE_FILE, GL_RGB, GL_TEXTURE0);
-	InitTexture(&texture1, SIMILEY_TEXTURE_FILE, GL_RGBA, GL_TEXTURE1);
 
-	Shader shader;
-	shader.use();
-	shader.setInt("texture0", 0);
-	shader.setInt("texture1", 1);
-	camera.Init(&shader);
+	Shader cubeShader("shaders/lighting.vs", "shaders/lighting_cube.fs");
+	Shader lightShader("shaders/lighting.vs", "shaders/lighting_light.fs");
+
+	cubeShader.use();
+	cubeShader.setVec3("objectColour", 1.0f, 0.5f, 0.31f);
+	cubeShader.setVec3("lightColour", 1.0f, 1.0f, 1.0f);
+
+	lightShader.use();
+	glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, lightPos);
+	model = glm::scale(model, glm::vec3(0.2f));
+	lightShader.setMat4("modelTransform", model);
+
+	cubeShader.use();
+	camera.Init(&cubeShader);
 
 	InitImGUI(&window);
 
@@ -136,18 +142,19 @@ int main() {
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-		camera.UpdateTransforms(&shader, deltaTime);
-
 		// clear screen
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// rendering
-		for (int i = 0; i < cubePositions.size(); i++) {
-			MoveModel(&shader, cubePositions[i], i, (i % 3 == 0));
-			RenderTriangle();
-		}
-		RenderImGui(&shader, &clear_color);
+		cubeShader.use();
+		camera.UpdateTransforms(&cubeShader, deltaTime);
+		RenderTriangle();
+
+		lightShader.use();
+		camera.UpdateTransforms(&lightShader, 0);
+		RenderTriangle();
+
+		RenderImGui(&cubeShader, &clear_color);
 
 		// check and call events and swap the buffers
 		glfwSwapBuffers(window);
@@ -172,7 +179,7 @@ GLFWwindow* InitWindow() {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	//glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-	GLFWwindow* window = glfwCreateWindow(static_cast<int>(SCREEN_WIDTH), static_cast<int>(SCREEN_HEIGHT) , "LearnOpenGL w/ ImGUI", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(static_cast<int>(SCREEN_WIDTH), static_cast<int>(SCREEN_HEIGHT), "LearnOpenGL w/ ImGUI", NULL, NULL);
 	if (window == NULL) {
 		std::cout << "Failed to creat the GLFW window" << std::endl;
 		glfwTerminate();
@@ -250,7 +257,7 @@ void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum te
 	stbi_image_free(data);
 }
 
-void MoveModel(Shader * shader, glm::vec3 position, int index, bool rotate) {
+void MoveModel(Shader* shader, glm::vec3 position, int index, bool rotate) {
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, position);
 
@@ -312,7 +319,7 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
 
 	if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
 		showImGui = !(showImGui);
-		
+
 		if (showImGui) {
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 			camera.Disable();

@@ -112,10 +112,19 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\shader_fragment.glsl">
+    <None Include="shaders\boxes_smiling.fs">
       <Filter>Source Files\shaders</Filter>
     </None>
-    <None Include="shaders\shader_vertex.glsl">
+    <None Include="shaders\boxes_smiling.vs">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\lighting_cube.fs">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\lighting.vs">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\lighting_light.fs">
       <Filter>Source Files\shaders</Filter>
     </None>
   </ItemGroup>

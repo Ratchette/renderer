@@ -33,7 +33,7 @@ private:
 	bool downKeyDown = false;
 	bool leftKeyDown = false;
 	bool rightKeyDown = false;
-	glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+	glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 5.0f);
 
 	// camera direction
 	float yaw = -90.0f;
