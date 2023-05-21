@@ -101,14 +101,15 @@ void glfw_mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void glfw_scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
 
 GLFWwindow* InitWindow();
-void InitImGUI(GLFWwindow** window);
-
 void InitVertexConfig(GLuint* VAO, std::vector<float> vertices);
 void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum texture_unit);
 
 void MoveModel(Shader* shader, glm::vec3 position, int index, bool rotate);
 void RenderTriangle();
-void RenderImGui(ImVec4* clear_color, float* texture_mix);
+
+void InitImGUI(GLFWwindow** window);
+void RenderImGui(Shader* shader, ImVec4* clear_color);
+
 
 int main() {
 	GLFWwindow* window;
@@ -118,10 +119,7 @@ int main() {
 	GLuint texture1;
 
 	assert(window = InitWindow());
-	InitImGUI(&window);
-
 	InitVertexConfig(&VAO, vertices);
-
 	InitTexture(&texture0, BOX_TEXTURE_FILE, GL_RGB, GL_TEXTURE0);
 	InitTexture(&texture1, SIMILEY_TEXTURE_FILE, GL_RGBA, GL_TEXTURE1);
 
@@ -129,11 +127,9 @@ int main() {
 	shader.use();
 	shader.setInt("texture0", 0);
 	shader.setInt("texture1", 1);
-
-	float texture_mix = 0.2f;
-	shader.setFloat("texture_mix", texture_mix);
-
 	camera.Init(&shader);
+
+	InitImGUI(&window);
 
 	while (!glfwWindowShouldClose(window)) {
 		float currentFrame = (float)glfwGetTime();
@@ -151,8 +147,7 @@ int main() {
 			MoveModel(&shader, cubePositions[i], i, (i % 3 == 0));
 			RenderTriangle();
 		}
-		RenderImGui(&clear_color, &texture_mix);
-		shader.setFloat("texture_mix", texture_mix);
+		RenderImGui(&shader, &clear_color);
 
 		// check and call events and swap the buffers
 		glfwSwapBuffers(window);
@@ -268,7 +263,9 @@ void RenderTriangle() {
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
-void RenderImGui(ImVec4* clear_color, float* texture_mix) {
+void RenderImGui(Shader* shader, ImVec4* clear_color) {
+	static float texture_mix = 0.2f;
+
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
@@ -280,7 +277,7 @@ void RenderImGui(ImVec4* clear_color, float* texture_mix) {
 		{
 			ImGui::LabelText("label", "Value");
 			ImGui::ColorEdit3("Background Colour", (float*)clear_color);
-			ImGui::SliderFloat("Texture Mixture", texture_mix, 0.0f, 1.0f, "ratio = %.3f");
+			ImGui::SliderFloat("Texture Mixture", &texture_mix, 0.0f, 1.0f, "ratio = %.3f");
 
 			if (ImGui::Button("Fill")) {
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -292,6 +289,8 @@ void RenderImGui(ImVec4* clear_color, float* texture_mix) {
 		}
 		ImGui::End();
 	}
+
+	shader->setFloat("texture_mix", texture_mix);
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
