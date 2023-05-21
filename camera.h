@@ -15,6 +15,9 @@ public:
 	void UpdateKeys(int key, int action);
 	void UpdateMouse(float xPos, float yPos);
 	void UpdateScroll(float yOffset);
+
+	void Disable();
+	void Enable();
 	
 private: 
 	const float DISPLAY_WIDTH = 800.0f;
@@ -22,6 +25,8 @@ private:
 
 	const float MOVE_SPEED = 2.5f;
 	const float MOUSE_SENSITIVITY = 0.1f;
+
+	bool enabled = true;
 
 	// movement
 	bool upKeyDown = false;

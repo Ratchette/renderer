@@ -28,7 +28,7 @@ const float SCREEN_WIDTH = 800.0f;
 const char* BOX_TEXTURE_FILE = "assets/container.jpg";
 const char* SIMILEY_TEXTURE_FILE = "assets/awesomeface.png";
 
-static bool showImGui = true;
+static bool showImGui = false;
 static ImVec4 clear_color = ImVec4(0.2f, 0.3f, 0.3f, 1.0f);
 
 std::vector<float> vertices = {
@@ -313,6 +313,14 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
 
 	if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
 		showImGui = !(showImGui);
+		
+		if (showImGui) {
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			camera.Disable();
+		} else {
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			camera.Enable();
+		}
 	}
 
 	camera.UpdateKeys(key, action);

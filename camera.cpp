@@ -22,9 +22,21 @@ void Camera::Init(Shader* shader) {
 }
 
 void Camera::UpdateTransforms(Shader* shader, float deltaTime) {
-	_Move(deltaTime);
-	_Tilt(shader);
+	if (!enabled) {
+		return;
+	}
+
 	_Zoom(shader);
+	_Tilt(shader);
+	_Move(deltaTime);
+}
+
+void Camera::Disable() {
+	enabled = false;
+}
+
+void Camera::Enable() {
+	enabled = true;
 }
 
 void Camera::_Move(float deltaTime) {
@@ -40,6 +52,8 @@ void Camera::_Move(float deltaTime) {
 	if (rightKeyDown) {
 		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * MOVE_SPEED * deltaTime;
 	}
+	
+	cameraPos.y = 0.0f;
 }
 
 void Camera::_Tilt(Shader* shader) {
