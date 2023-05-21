@@ -14,6 +14,7 @@ class Shader {
 public:
 	unsigned int ID;
 
+	Shader();
 	Shader(const char* vertexPath, const char* fragmentPath);
 
 	void use();
@@ -33,6 +34,10 @@ public:
 	void setMat2(const std::string& name, const glm::mat2& mat) const;
 	void setMat3(const std::string& name, const glm::mat3& mat) const;
 	void setMat4(const std::string& name, const glm::mat4& mat) const;
+
+private:
+	inline static const char* VERTEX_SHADER_FILE = "shaders/shader_vertex.glsl";
+	inline static const char* FRAGMENT_SHADER_FILE = "shaders/shader_fragment.glsl";
 };
 
 #endif SHADER_H
