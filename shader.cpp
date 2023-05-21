@@ -1,4 +1,4 @@
-#include "shader.h"
+#include "shader.hpp"
 
 Shader::Shader() : Shader::Shader(Shader::DEFAULT_VERTEX_SHADER_FILE, Shader::DEFAULT_FRAGMENT_SHADER_FILE) {};
 

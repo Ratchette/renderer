@@ -18,8 +18,8 @@
 #include <iostream>
 #include <vector>
 
-#include "shader.h"
-#include "camera.h"
+#include "shader.hpp"
+#include "camera.hpp"
 
 const char* glsl_version = "#version 330";
 const float SCREEN_HEIGHT = 600.0f;
@@ -113,7 +113,8 @@ void RenderImGui(Shader* shader, ImVec4* clear_color);
 
 int main() {
 	GLFWwindow* window;
-	assert(window = InitWindow());
+	window = InitWindow();
+	assert(window);
 
 	GLuint VAO;
 	InitVertexConfig(&VAO, vertices);

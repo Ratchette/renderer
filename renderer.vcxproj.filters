@@ -104,10 +104,10 @@
     <ClInclude Include="glm\gtc\type_ptr.hpp">
       <Filter>Header Files\glm</Filter>
     </ClInclude>
-    <ClInclude Include="camera.h">
+    <ClInclude Include="camera.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="shader.h">
+    <ClInclude Include="shader.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
