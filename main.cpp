@@ -20,6 +20,9 @@
 #include <iostream>
 #include <vector>
 
+static const float SCREEN_HEIGHT = 600.0f;
+static const float SCREEN_WIDTH = 800.0f;
+
 
 const char* glsl_version = "#version 330";
 const char* VERTEX_SHADER_FILE = "shaders/shader_vertex.glsl";
@@ -42,6 +45,16 @@ static bool upKeyDown = false;
 static bool downKeyDown = false;
 static bool leftKeyDown = false;
 static bool rightKeyDown = false;
+
+
+static float yaw = -90.0f;
+static float pitch = 0.0f;
+
+static float lastX = 400;
+static float lastY = 300;
+static const float MOUSE_SENSITIVITY = 0.1f;
+
+static float fov = 45.0f;
 
 std::vector<float> vertices = {
 	// positions          // texture coords
@@ -103,6 +116,8 @@ std::vector<glm::vec3> cubePositions = {
 
 static void glfw_error_callback(int error, const char* description);
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void glfw_mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void glfw_scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
 GLFWwindow* InitWindow();
@@ -113,7 +128,7 @@ void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum te
 void InitTransforms(Shader* shader);
 
 void UpdateTransforms(Shader* shader, glm::vec3 position, int index, bool rotate = false);
-void ProcessInput(GLFWwindow* window);
+void Move();
 
 void RenderTriangle();
 void RenderImGui(ImVec4* clear_color, float* texture_mix);
@@ -129,7 +144,6 @@ int main() {
 
 	assert(window = InitWindow());
 	InitImGUI(&window);
-	glfwSetKeyCallback(window, glfw_key_callback);
 
 	InitVertexConfig(&VAO, vertices);
 
@@ -151,8 +165,10 @@ int main() {
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-		// input
-		ProcessInput(window);
+		// Input is handled by glfw callbacks
+
+		// Physics
+		Move();
 
 		// clear screen
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
@@ -189,7 +205,7 @@ GLFWwindow* InitWindow() {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	//glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-	GLFWwindow* window = glfwCreateWindow(800, 600, "LearnOpenGL w/ ImGUI", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(static_cast<int>(SCREEN_WIDTH), static_cast<int>(SCREEN_HEIGHT) , "LearnOpenGL w/ ImGUI", NULL, NULL);
 	if (window == NULL) {
 		std::cout << "Failed to creat the GLFW window" << std::endl;
 		glfwTerminate();
@@ -204,8 +220,13 @@ GLFWwindow* InitWindow() {
 		return NULL;
 	}
 
-	glViewport(0, 0, 800, 600);
+	glViewport(0, 0, static_cast<int>(SCREEN_WIDTH), static_cast<int>(SCREEN_HEIGHT));
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetKeyCallback(window, glfw_key_callback);
+	glfwSetCursorPosCallback(window, glfw_mouse_callback);
+	glfwSetScrollCallback(window, glfw_scroll_callback);
 
 	return window;
 }
@@ -278,11 +299,13 @@ void InitTransforms(Shader* shader) {
 
 	// Projection Matrix
 	glm::mat4 projection;
-	projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+	projection = glm::perspective(glm::radians(fov), SCREEN_WIDTH / SCREEN_HEIGHT, 0.1f, 100.0f);
 	shader->setMat4("perspectiveTransform", projection);
 }
 
 void UpdateTransforms(Shader* shader, glm::vec3 position, int index, bool rotate) {
+
+	// Change camera position 
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, position);
 
@@ -290,16 +313,27 @@ void UpdateTransforms(Shader* shader, glm::vec3 position, int index, bool rotate
 	model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
 	shader->setMat4("modelTransform", model);
 
+	// Change camera direction
+	glm::vec3 direction;
+	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+	direction.y = sin(glm::radians(pitch));
+	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+	cameraFront = glm::normalize(direction);
+
 	glm::mat4 view = glm::lookAt(
 		cameraPos,
 		cameraPos + cameraFront,
 		cameraUp
 	);
 	shader->setMat4("viewTransform", view);
+
+	// Update FOV (zoom)
+	glm::mat4 projection = glm::perspective(glm::radians(fov), SCREEN_WIDTH / SCREEN_HEIGHT, 0.1f, 100.0f);
+	shader->setMat4("perspectiveTransform", projection);
 }
 
 
-void ProcessInput(GLFWwindow* window) {
+void Move() {
 	if (upKeyDown) {
 		cameraPos += cameraFront * cameraSpeed * deltaTime;
 	}
@@ -400,6 +434,35 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
 	}
 }
 
+void glfw_mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+	float xOffset = (static_cast<float>(xpos) - lastX) * MOUSE_SENSITIVITY;
+	float yOffset = (lastY - static_cast<float>(ypos)) * MOUSE_SENSITIVITY;
+
+	lastX = static_cast<float>(xpos);
+	lastY = static_cast<float>(ypos);
+
+	yaw += xOffset;
+	pitch += yOffset;
+
+	if (pitch > 89.0f) {
+		pitch = 89.0f;
+	} else if (pitch < -89.0f) {
+		pitch = -89.0f;
+	}
+}
+
+void glfw_scroll_callback(GLFWwindow* window, double xOffset, double yOffset) {
+	fov -= static_cast<float>(yOffset);
+
+	if (fov < 1.0f) {
+		fov = 1.0f;
+	} else if (fov > 45.0f) {
+		fov = 45.0f;
+	}
+
+	std::cout << "FOV: " << fov << std::endl;
+}
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-	glViewport(0, 0, 800, 600);
+	glViewport(0, 0, static_cast<GLsizei>(SCREEN_WIDTH), static_cast<GLsizei>(SCREEN_HEIGHT));
 }
