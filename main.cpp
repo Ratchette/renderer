@@ -10,8 +10,6 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
-#include "shaders/shader.h"
-
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
 
@@ -20,41 +18,18 @@
 #include <iostream>
 #include <vector>
 
-static const float SCREEN_HEIGHT = 600.0f;
-static const float SCREEN_WIDTH = 800.0f;
-
+#include "shader.h"
+#include "camera.h"
 
 const char* glsl_version = "#version 330";
-const char* VERTEX_SHADER_FILE = "shaders/shader_vertex.glsl";
-const char* FRAGMENT_SHADER_FILE = "shaders/shader_fragment.glsl";
+const float SCREEN_HEIGHT = 600.0f;
+const float SCREEN_WIDTH = 800.0f;
 
 const char* BOX_TEXTURE_FILE = "assets/container.jpg";
 const char* SIMILEY_TEXTURE_FILE = "assets/awesomeface.png";
 
 static bool showImGui = true;
-
-static const float cameraSpeed = 2.5f;
-static glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-static glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-static glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
-static float deltaTime = 0.0f;
-static float lastFrame = 0.0f;
-
-static bool upKeyDown = false;
-static bool downKeyDown = false;
-static bool leftKeyDown = false;
-static bool rightKeyDown = false;
-
-
-static float yaw = -90.0f;
-static float pitch = 0.0f;
-
-static float lastX = 400;
-static float lastY = 300;
-static const float MOUSE_SENSITIVITY = 0.1f;
-
-static float fov = 45.0f;
+static ImVec4 clear_color = ImVec4(0.2f, 0.3f, 0.3f, 1.0f);
 
 std::vector<float> vertices = {
 	// positions          // texture coords
@@ -114,22 +89,24 @@ std::vector<glm::vec3> cubePositions = {
 	glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
+Camera camera;
+
+static float deltaTime = 0.0f;
+static float lastFrame = 0.0f;
+
+
 static void glfw_error_callback(int error, const char* description);
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void glfw_mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void glfw_scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
 GLFWwindow* InitWindow();
 void InitImGUI(GLFWwindow** window);
 
 void InitVertexConfig(GLuint* VAO, std::vector<float> vertices);
 void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum texture_unit);
-void InitTransforms(Shader* shader);
 
-void UpdateTransforms(Shader* shader, glm::vec3 position, int index, bool rotate = false);
-void Move();
-
+void MoveModel(Shader* shader, glm::vec3 position, int index, bool rotate);
 void RenderTriangle();
 void RenderImGui(ImVec4* clear_color, float* texture_mix);
 
@@ -140,8 +117,6 @@ int main() {
 	GLuint texture0;
 	GLuint texture1;
 
-	ImVec4 clear_color = ImVec4(0.2f, 0.3f, 0.3f, 1.0f);
-
 	assert(window = InitWindow());
 	InitImGUI(&window);
 
@@ -150,7 +125,7 @@ int main() {
 	InitTexture(&texture0, BOX_TEXTURE_FILE, GL_RGB, GL_TEXTURE0);
 	InitTexture(&texture1, SIMILEY_TEXTURE_FILE, GL_RGBA, GL_TEXTURE1);
 
-	Shader shader(VERTEX_SHADER_FILE, FRAGMENT_SHADER_FILE);
+	Shader shader;
 	shader.use();
 	shader.setInt("texture0", 0);
 	shader.setInt("texture1", 1);
@@ -158,17 +133,14 @@ int main() {
 	float texture_mix = 0.2f;
 	shader.setFloat("texture_mix", texture_mix);
 
-	InitTransforms(&shader);
+	camera.Init(&shader);
 
 	while (!glfwWindowShouldClose(window)) {
 		float currentFrame = (float)glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-		// Input is handled by glfw callbacks
-
-		// Physics
-		Move();
+		camera.UpdateTransforms(&shader, deltaTime);
 
 		// clear screen
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
@@ -176,7 +148,7 @@ int main() {
 
 		// rendering
 		for (int i = 0; i < cubePositions.size(); i++) {
-			UpdateTransforms(&shader, cubePositions[i], i, (i % 3 == 0));
+			MoveModel(&shader, cubePositions[i], i, (i % 3 == 0));
 			RenderTriangle();
 		}
 		RenderImGui(&clear_color, &texture_mix);
@@ -221,7 +193,6 @@ GLFWwindow* InitWindow() {
 	}
 
 	glViewport(0, 0, static_cast<int>(SCREEN_WIDTH), static_cast<int>(SCREEN_HEIGHT));
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetKeyCallback(window, glfw_key_callback);
@@ -284,68 +255,13 @@ void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum te
 	stbi_image_free(data);
 }
 
-void InitTransforms(Shader* shader) {
-	glEnable(GL_DEPTH_TEST);
-
-	// Transform into world coordinates
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	shader->setMat4("modelTransform", model);
-
-	// Transform into view coordinates
-	glm::mat4 view = glm::mat4(1.0f);
-	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-	shader->setMat4("viewTransform", view);
-
-	// Projection Matrix
-	glm::mat4 projection;
-	projection = glm::perspective(glm::radians(fov), SCREEN_WIDTH / SCREEN_HEIGHT, 0.1f, 100.0f);
-	shader->setMat4("perspectiveTransform", projection);
-}
-
-void UpdateTransforms(Shader* shader, glm::vec3 position, int index, bool rotate) {
-
-	// Change camera position 
+void MoveModel(Shader * shader, glm::vec3 position, int index, bool rotate) {
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, position);
 
 	float angle = 20.0f * index + (rotate ? (float)glfwGetTime() : 0);
 	model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
 	shader->setMat4("modelTransform", model);
-
-	// Change camera direction
-	glm::vec3 direction;
-	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-	direction.y = sin(glm::radians(pitch));
-	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	cameraFront = glm::normalize(direction);
-
-	glm::mat4 view = glm::lookAt(
-		cameraPos,
-		cameraPos + cameraFront,
-		cameraUp
-	);
-	shader->setMat4("viewTransform", view);
-
-	// Update FOV (zoom)
-	glm::mat4 projection = glm::perspective(glm::radians(fov), SCREEN_WIDTH / SCREEN_HEIGHT, 0.1f, 100.0f);
-	shader->setMat4("perspectiveTransform", projection);
-}
-
-
-void Move() {
-	if (upKeyDown) {
-		cameraPos += cameraFront * cameraSpeed * deltaTime;
-	}
-	if (downKeyDown) {
-		cameraPos -= cameraFront * cameraSpeed * deltaTime;
-	}
-	if (leftKeyDown) {
-		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed * deltaTime;
-	}
-	if (rightKeyDown) {
-		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed * deltaTime;
-	}
 }
 
 void RenderTriangle() {
@@ -399,70 +315,13 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
 		showImGui = !(showImGui);
 	}
 
-	if (key == GLFW_KEY_W) {
-		if (action == GLFW_PRESS) {
-			upKeyDown = true;
-		} else if (action == GLFW_RELEASE) {
-			upKeyDown = false;
-		}
-	}
-
-	if (key == GLFW_KEY_S) {
-		if (action == GLFW_PRESS) {
-			downKeyDown = true;
-		} else if (action == GLFW_RELEASE) {
-			downKeyDown = false;
-		}
-	}
-
-	if (key == GLFW_KEY_A) {
-		if (action == GLFW_PRESS) {
-			leftKeyDown = true;
-		} else if (action == GLFW_RELEASE) {
-			leftKeyDown = false;
-		}
-	}
-
-	if (key == GLFW_KEY_D) {
-		if (action == GLFW_PRESS) {
-			rightKeyDown = true;
-		} else if (action == GLFW_RELEASE) {
-			rightKeyDown = false;
-		}
-
-
-	}
+	camera.UpdateKeys(key, action);
 }
 
 void glfw_mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-	float xOffset = (static_cast<float>(xpos) - lastX) * MOUSE_SENSITIVITY;
-	float yOffset = (lastY - static_cast<float>(ypos)) * MOUSE_SENSITIVITY;
-
-	lastX = static_cast<float>(xpos);
-	lastY = static_cast<float>(ypos);
-
-	yaw += xOffset;
-	pitch += yOffset;
-
-	if (pitch > 89.0f) {
-		pitch = 89.0f;
-	} else if (pitch < -89.0f) {
-		pitch = -89.0f;
-	}
+	camera.UpdateMouse(static_cast<float>(xpos), static_cast<float>(ypos));
 }
 
 void glfw_scroll_callback(GLFWwindow* window, double xOffset, double yOffset) {
-	fov -= static_cast<float>(yOffset);
-
-	if (fov < 1.0f) {
-		fov = 1.0f;
-	} else if (fov > 45.0f) {
-		fov = 45.0f;
-	}
-
-	std::cout << "FOV: " << fov << std::endl;
-}
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-	glViewport(0, 0, static_cast<GLsizei>(SCREEN_WIDTH), static_cast<GLsizei>(SCREEN_HEIGHT));
+	camera.UpdateScroll(static_cast<float>(yOffset));
 }
