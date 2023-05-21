@@ -97,17 +97,19 @@ void InitImGUI(GLFWwindow** window);
 
 void InitVertexConfig(GLuint* VAO, std::vector<float> vertices);
 void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum texture_unit);
+void InitCamera();
 void InitTransforms(Shader* shader);
 
 void UpdateTransforms(Shader* shader, glm::vec3 position, int index, bool rotate = false);
 void ProcessInput(GLFWwindow* window);
+
 void RenderTriangle();
 void RenderImGui(ImVec4* clear_color, float* texture_mix);
 
 int main() {
 	GLFWwindow* window;
 
-	GLuint VAO; 
+	GLuint VAO;
 	GLuint texture0;
 	GLuint texture1;
 
@@ -131,6 +133,7 @@ int main() {
 	float texture_mix = 0.2f;
 	shader.setFloat("texture_mix", texture_mix);
 
+	InitCamera();
 	InitTransforms(&shader);
 
 	while (!glfwWindowShouldClose(window)) {
@@ -144,7 +147,7 @@ int main() {
 
 		// rendering
 		for (int i = 0; i < cubePositions.size(); i++) {
-			UpdateTransforms(&shader, cubePositions[i], i, (i%3 == 0));
+			UpdateTransforms(&shader, cubePositions[i], i, (i % 3 == 0));
 			RenderTriangle();
 		}
 		RenderImGui(&clear_color, &texture_mix);
@@ -227,8 +230,8 @@ void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum te
 	glGenTextures(1, texture);
 	glBindTexture(GL_TEXTURE_2D, *texture);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -244,6 +247,13 @@ void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum te
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	stbi_image_free(data);
+}
+
+void InitCamera() {
+	glm::mat4 view = glm::lookAt(
+		glm::vec3(0.0f, 0.0f, 3.0f),
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void InitTransforms(Shader* shader) {
@@ -272,6 +282,17 @@ void UpdateTransforms(Shader* shader, glm::vec3 position, int index, bool rotate
 	float angle = 20.0f * index + (rotate ? (float)glfwGetTime() : 0);
 	model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
 	shader->setMat4("modelTransform", model);
+
+	const float radius = 10.0f;
+	float camX = sin(glfwGetTime()) * radius;
+	float camZ = cos(glfwGetTime()) * radius;
+
+	glm::mat4 view = glm::lookAt(
+		glm::vec3(camX, 0.0, camZ),
+		glm::vec3(0.0, 0.0, 0.0),
+		glm::vec3(0.0f, 1.0f, 0.0f)
+	);
+	shader->setMat4("viewTransform", view);
 }
 
 
