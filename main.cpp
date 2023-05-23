@@ -157,23 +157,26 @@ int main() {
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		lightShader.use();
-		MoveLight(&lightShader, &lightPos);
-		lightShader.setVec3("lightPos", lightPos);
-		camera.Update(&lightShader, 0);
-		RenderTriangle();
-
+		// Draw the cube
 		cubeShader.use();
 		cubeShader.setVec3("lightPos", lightPos);
 		camera.Update(&cubeShader, deltaTime);
 
 		glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
 		glm::vec3 ambientColor = diffuseColor * glm::vec3(0.5f);
-
 		cubeShader.setVec3("light.ambient", ambientColor);
 		cubeShader.setVec3("light.diffuse", diffuseColor);
-
+		
 		RenderTriangle();
+
+		// Draw the light source
+		lightShader.use();
+		MoveLight(&lightShader, &lightPos);
+		lightShader.setVec3("lightPos", lightPos);
+		lightShader.setVec3("lightColour", lightColor);
+		camera.Update(&lightShader, 0);
+		RenderTriangle();
+
 
 		RenderImGui(&cubeShader, &clear_color, &lightColor);
 
