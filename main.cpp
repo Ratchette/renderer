@@ -28,52 +28,54 @@ const float SCREEN_WIDTH = 800.0f;
 const char* BOX_TEXTURE_FILE = "assets/container.jpg";
 const char* SIMILEY_TEXTURE_FILE = "assets/awesomeface.png";
 
+glm::vec3 lightPos(1.5f, 2.0f, 1.5f);
+
 static bool showImGui = false;
 static ImVec4 clear_color = ImVec4(0.2f, 0.3f, 0.3f, 1.0f);
 
 std::vector<float> vertices = {
-	// positions          // texture coords
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+	// positions          // normals
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
 
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 };
 
 std::vector<glm::vec3> cubePositions = {
@@ -104,7 +106,7 @@ GLFWwindow* InitWindow();
 void InitVertexConfig(GLuint* VAO, std::vector<float> vertices);
 void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum texture_unit);
 
-void MoveModel(Shader* shader, glm::vec3 position, int index, bool rotate);
+void MoveLight(Shader* shader, glm::vec3* position);
 void RenderTriangle();
 
 void InitImGUI(GLFWwindow** window);
@@ -123,18 +125,17 @@ int main() {
 	Shader lightShader("shaders/lighting.vs", "shaders/lighting_light.fs");
 
 	cubeShader.use();
+	camera.Init(window, &cubeShader);
 	cubeShader.setVec3("objectColour", 1.0f, 0.5f, 0.31f);
 	cubeShader.setVec3("lightColour", 1.0f, 1.0f, 1.0f);
+	cubeShader.setVec3("lightPosition", lightPos);
 
 	lightShader.use();
-	glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+	camera.Init(window, &lightShader);
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, lightPos);
 	model = glm::scale(model, glm::vec3(0.2f));
 	lightShader.setMat4("modelTransform", model);
-
-	cubeShader.use();
-	camera.Init(&cubeShader);
 
 	InitImGUI(&window);
 
@@ -147,13 +148,17 @@ int main() {
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		cubeShader.use();
-		camera.UpdateTransforms(&cubeShader, deltaTime);
+		lightShader.use();
+		MoveLight(&lightShader, &lightPos);
+		camera.Update(&lightShader, 0);
 		RenderTriangle();
 
-		lightShader.use();
-		camera.UpdateTransforms(&lightShader, 0);
+		cubeShader.use();
+		cubeShader.setVec3("lightPosition", lightPos);
+		camera.Update(&cubeShader, deltaTime);
 		RenderTriangle();
+
+		
 
 		RenderImGui(&cubeShader, &clear_color);
 
@@ -228,10 +233,10 @@ void InitVertexConfig(GLuint* VAO, std::vector<float> vertices) {
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(int), vertices.data(), GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 }
 
 void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum texture_unit) {
@@ -258,12 +263,17 @@ void InitTexture(GLuint* texture, const char* filepath, GLenum format, GLenum te
 	stbi_image_free(data);
 }
 
-void MoveModel(Shader* shader, glm::vec3 position, int index, bool rotate) {
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, position);
+void MoveLight(Shader* shader, glm::vec3 * position) {
+	float radius = 4.0f;
+	float angle = (float)glfwGetTime();
 
-	float angle = 20.0f * index + (rotate ? (float)glfwGetTime() : 0);
-	model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
+	glm::mat4 model = glm::mat4(1.0f);
+	position->x = glm::cos(angle) * radius;
+	position->z = glm::sin(angle) * radius;
+
+	model = glm::translate(model, *position);
+	model = glm::scale(model, glm::vec3(0.2f));
+
 	shader->setMat4("modelTransform", model);
 }
 
@@ -330,13 +340,13 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
 		}
 	}
 
-	camera.UpdateKeys(key, action);
+	camera.OnKeyPress(key, action);
 }
 
 void glfw_mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-	camera.UpdateMouse(static_cast<float>(xpos), static_cast<float>(ypos));
+	camera.OnMouseMove(static_cast<float>(xpos), static_cast<float>(ypos));
 }
 
 void glfw_scroll_callback(GLFWwindow* window, double xOffset, double yOffset) {
-	camera.UpdateScroll(static_cast<float>(yOffset));
+	camera.OnScroll(static_cast<float>(yOffset));
 }

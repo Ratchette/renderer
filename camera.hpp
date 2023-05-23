@@ -1,6 +1,9 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
@@ -9,12 +12,12 @@
 
 class Camera {
 public:
-	void Init(Shader* shader);
-	void UpdateTransforms(Shader* shader, float deltaTime);
+	void Init(GLFWwindow* window, Shader* shader);
+	void Update(Shader* shader, float deltaTime);
 
-	void UpdateKeys(int key, int action);
-	void UpdateMouse(float xPos, float yPos);
-	void UpdateScroll(float yOffset);
+	void OnKeyPress(int key, int action);
+	void OnMouseMove(float xPos, float yPos);
+	void OnScroll(float yOffset);
 
 	void Disable();
 	void Enable();
@@ -33,14 +36,14 @@ private:
 	bool downKeyDown = false;
 	bool leftKeyDown = false;
 	bool rightKeyDown = false;
-	glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 5.0f);
+	glm::vec3 cameraPos = glm::vec3(-3.1f, 3.2f, 5.2f);
 
 	// camera direction
-	float yaw = -90.0f;
-	float pitch = 0.0f;
+	float yaw = -58.6f;
+	float pitch = -22.0f;
 	float lastX = 400;
 	float lastY = 300;
-	glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+	glm::vec3 cameraFront = glm::vec3(5.0f, 1.0f, -1.0f);
 	glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	// Zoom

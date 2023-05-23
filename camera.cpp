@@ -1,13 +1,19 @@
 #include "camera.hpp"
 
-#include <GLFW/glfw3.h>
-
-void Camera::Init(Shader* shader) {
+void Camera::Init(GLFWwindow* window, Shader* shader) {
 	glEnable(GL_DEPTH_TEST);
+
+	double curX;
+	double curY;
+	glfwGetCursorPos(window, &curX, &curY);
+
+	lastX = static_cast<float>(curX);
+	lastY = static_cast<float>(curY);
 
 	// Transform into world coordinates
 	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	// No rotation makes specular highlights easier to see
+	//model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	shader->setMat4("modelTransform", model);
 
 	// Transform into view coordinates
@@ -19,9 +25,12 @@ void Camera::Init(Shader* shader) {
 	glm::mat4 projection;
 	projection = glm::perspective(glm::radians(fov), DISPLAY_WIDTH / DISPLAY_HEIGHT, 0.1f, 100.0f);
 	shader->setMat4("perspectiveTransform", projection);
+
+	// Used to calculate specular lighting
+	shader->setVec3("viewerPosition", cameraPos);
 }
 
-void Camera::UpdateTransforms(Shader* shader, float deltaTime) {
+void Camera::Update(Shader* shader, float deltaTime) {
 	if (!enabled) {
 		return;
 	}
@@ -29,6 +38,8 @@ void Camera::UpdateTransforms(Shader* shader, float deltaTime) {
 	_Zoom(shader);
 	_Tilt(shader);
 	_Move(deltaTime);
+
+	shader->setVec3("viewerPosition", cameraPos);
 }
 
 void Camera::Disable() {
@@ -76,7 +87,7 @@ void Camera::_Zoom(Shader* shader) {
 	shader->setMat4("perspectiveTransform", projection);
 }
 
-void Camera::UpdateKeys(int key, int action) {
+void Camera::OnKeyPress(int key, int action) {
 	if (key == GLFW_KEY_W) {
 		if (action == GLFW_PRESS) {
 			upKeyDown = true;
@@ -110,7 +121,7 @@ void Camera::UpdateKeys(int key, int action) {
 	}
 }
 
-void Camera::UpdateMouse(float xPos, float yPos) {
+void Camera::OnMouseMove(float xPos, float yPos) {
 	float xOffset = (xPos - lastX) * MOUSE_SENSITIVITY;
 	float yOffset = (lastY - yPos) * MOUSE_SENSITIVITY;
 
@@ -125,9 +136,11 @@ void Camera::UpdateMouse(float xPos, float yPos) {
 	} else if (pitch < -89.0f) {
 		pitch = -89.0f;
 	}
+
+
 }
 
-void Camera::UpdateScroll(float yOffset) {
+void Camera::OnScroll(float yOffset) {
 	fov -= yOffset;
 
 	if (fov < 1.0f) {
@@ -136,5 +149,3 @@ void Camera::UpdateScroll(float yOffset) {
 		fov = 45.0f;
 	}
 }
-
-
