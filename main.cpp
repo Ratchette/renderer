@@ -92,6 +92,7 @@ std::vector<glm::vec3> cubePositions = {
 
 Camera camera;
 glm::vec3 lightPos(1.5f, 2.0f, 1.5f);
+glm::vec3 lightDirection(-0.2f, -1.0f, -0.3f);
 
 static float deltaTime = 0.0f;
 static float lastFrame = 0.0f;
@@ -108,7 +109,7 @@ GLuint InitTexture(const char* filepath, GLenum texture_unit);
 void InitCubeShader(Shader* shader);
 void InitLightShader(Shader* shader);
 
-void RenderCube(Shader* shader);
+void RenderCubes(Shader* shader);
 void RenderLight(Shader* shader);
 void Draw();
 
@@ -154,8 +155,8 @@ int main() {
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		RenderCube(&cubeShader);
-		RenderLight(&lightShader);
+		RenderCubes(&cubeShader);
+		//RenderLight(&lightShader);
 		RenderImGui(&clear_color, &lightColor);
 
 		// check and call events and swap the buffers
@@ -286,7 +287,7 @@ void InitCubeShader(Shader* shader) {
 	shader->setInt("material.emission", 2);
 	shader->setFloat("material.shininess", 32.0f);
 
-	shader->setVec3("lightPos", lightPos);
+	shader->setVec3("light.direction", lightDirection);
 	shader->setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
 	shader->setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
 	shader->setVec3("light.specular", 1.0f, 1.0f, 1.0f);
@@ -307,7 +308,7 @@ void InitLightShader(Shader* shader) {
 }
 
 
-void RenderCube(Shader* shader) {
+void RenderCubes(Shader* shader) {
 	shader->use();
 
 	// The camera may have moved
@@ -316,15 +317,25 @@ void RenderCube(Shader* shader) {
 	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
 
 	// The light source may have moved or changed colour
-	shader->setVec3("lightPos", lightPos);
-	
+	shader->setVec3("light.direction", lightDirection);
 
 	glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
 	glm::vec3 ambientColor = diffuseColor * glm::vec3(0.5f);
 	shader->setVec3("light.ambient", ambientColor);
 	shader->setVec3("light.diffuse", diffuseColor);
 
-	Draw();
+
+	for (int i = 0; i < cubePositions.size(); i++) {
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, cubePositions[i]);
+
+		float angle = 20.0f * i;
+		model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+
+		shader->setMat4("modelTransform", model);
+
+		Draw();
+	}
 }
 
 void RenderLight(Shader* shader) {
@@ -337,17 +348,17 @@ void RenderLight(Shader* shader) {
 	shader->setVec3("viewerPosition", camera.GetCameraPosition());
 	shader->setMat4("viewTransform", camera.GetViewMatrix());
 
-	// Rotate the light around the screen
-	glm::mat4 model = glm::mat4(1.0f);
-	lightPos.x = glm::cos(angle) * radius;
-	lightPos.z = glm::sin(angle) * radius;
+	//// Rotate the light around the screen
+	//glm::mat4 model = glm::mat4(1.0f);
+	//lightPos.x = glm::cos(angle) * radius;
+	//lightPos.z = glm::sin(angle) * radius;
 
-	model = glm::translate(model, lightPos);
-	model = glm::scale(model, glm::vec3(0.2f));
-	shader->setMat4("modelTransform", model);
+	//model = glm::translate(model, lightPos);
+	//model = glm::scale(model, glm::vec3(0.2f));
+	//shader->setMat4("modelTransform", model);
 
 
-	shader->setVec3("lightPos", lightPos);
+	shader->setVec3("light.direction", lightDirection);
 	shader->setVec3("lightColour", lightColor);
 
 	Draw();
