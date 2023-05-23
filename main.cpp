@@ -110,7 +110,7 @@ void MoveLight(Shader* shader, glm::vec3* position);
 void RenderTriangle();
 
 void InitImGUI(GLFWwindow** window);
-void RenderImGui(Shader* shader, ImVec4* clear_color);
+void RenderImGui(Shader* shader, ImVec4* clear_color, glm::vec3* lightColor);
 
 
 int main() {
@@ -126,9 +126,16 @@ int main() {
 
 	cubeShader.use();
 	camera.Init(window, &cubeShader);
-	cubeShader.setVec3("objectColour", 1.0f, 0.5f, 0.31f);
-	cubeShader.setVec3("lightColour", 1.0f, 1.0f, 1.0f);
 	cubeShader.setVec3("lightPos", lightPos);
+
+	cubeShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+	cubeShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+	cubeShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+	cubeShader.setFloat("material.shininess", 32.0f);
+
+	cubeShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+	cubeShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
+	cubeShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 
 	lightShader.use();
 	camera.Init(window, &lightShader);
@@ -136,6 +143,8 @@ int main() {
 	model = glm::translate(model, lightPos);
 	model = glm::scale(model, glm::vec3(0.2f));
 	lightShader.setMat4("modelTransform", model);
+
+	glm::vec3 lightColor(1);
 
 	InitImGUI(&window);
 
@@ -157,11 +166,16 @@ int main() {
 		cubeShader.use();
 		cubeShader.setVec3("lightPos", lightPos);
 		camera.Update(&cubeShader, deltaTime);
+
+		glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
+		glm::vec3 ambientColor = diffuseColor * glm::vec3(0.5f);
+
+		cubeShader.setVec3("light.ambient", ambientColor);
+		cubeShader.setVec3("light.diffuse", diffuseColor);
+
 		RenderTriangle();
 
-		
-
-		RenderImGui(&cubeShader, &clear_color);
+		RenderImGui(&cubeShader, &clear_color, &lightColor);
 
 		// check and call events and swap the buffers
 		glfwSwapBuffers(window);
@@ -282,7 +296,7 @@ void RenderTriangle() {
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
-void RenderImGui(Shader* shader, ImVec4* clear_color) {
+void RenderImGui(Shader* shader, ImVec4* clear_color, glm::vec3* lightColour) {
 	static float texture_mix = 0.2f;
 
 	ImGui_ImplOpenGL3_NewFrame();
@@ -296,6 +310,7 @@ void RenderImGui(Shader* shader, ImVec4* clear_color) {
 		{
 			ImGui::LabelText("label", "Value");
 			ImGui::ColorEdit3("Background Colour", (float*)clear_color);
+			ImGui::ColorEdit3("Light Colour", (float*)lightColour);
 			ImGui::SliderFloat("Texture Mixture", &texture_mix, 0.0f, 1.0f, "ratio = %.3f");
 
 			if (ImGui::Button("Fill")) {
