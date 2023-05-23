@@ -128,7 +128,7 @@ int main() {
 	camera.Init(window, &cubeShader);
 	cubeShader.setVec3("objectColour", 1.0f, 0.5f, 0.31f);
 	cubeShader.setVec3("lightColour", 1.0f, 1.0f, 1.0f);
-	cubeShader.setVec3("lightPosition", lightPos);
+	cubeShader.setVec3("lightPos", lightPos);
 
 	lightShader.use();
 	camera.Init(window, &lightShader);
@@ -150,11 +150,12 @@ int main() {
 
 		lightShader.use();
 		MoveLight(&lightShader, &lightPos);
+		lightShader.setVec3("lightPos", lightPos);
 		camera.Update(&lightShader, 0);
 		RenderTriangle();
 
 		cubeShader.use();
-		cubeShader.setVec3("lightPosition", lightPos);
+		cubeShader.setVec3("lightPos", lightPos);
 		camera.Update(&cubeShader, deltaTime);
 		RenderTriangle();
 
