@@ -14,8 +14,8 @@ out vec2 TextureCoordinates;
 
 void main() {
 	gl_Position = perspectiveTransform * viewTransform * modelTransform * vec4(aPos, 1.0f);
-	FragPosition = vec3(viewTransform * modelTransform * vec4(aPos, 1.0));
-	Normal = mat3(transpose(inverse(viewTransform * modelTransform))) * aNormal;
+	FragPosition = vec3(modelTransform * vec4(aPos, 1.0));
+	Normal = mat3(transpose(inverse(modelTransform))) * aNormal;
 
 	TextureCoordinates = aTexCoord;
 }

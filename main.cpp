@@ -156,7 +156,7 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		RenderCubes(&cubeShader);
-		//RenderLight(&lightShader);
+		RenderLight(&lightShader);
 		RenderImGui(&clear_color, &lightColor);
 
 		// check and call events and swap the buffers
@@ -287,10 +287,13 @@ void InitCubeShader(Shader* shader) {
 	shader->setInt("material.emission", 2);
 	shader->setFloat("material.shininess", 32.0f);
 
-	shader->setVec3("light.direction", lightDirection);
+	shader->setVec3("light.position", lightPos);
 	shader->setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
 	shader->setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
 	shader->setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+	shader->setFloat("light.constant", 1.0f);
+	shader->setFloat("light.linear", 0.09f);
+	shader->setFloat("light.quadratic", 0.032f);
 
 	shader->setVec3("viewerPosition", camera.GetCameraPosition());
 }
@@ -317,7 +320,7 @@ void RenderCubes(Shader* shader) {
 	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
 
 	// The light source may have moved or changed colour
-	shader->setVec3("light.direction", lightDirection);
+	shader->setVec3("light.position", lightPos);
 
 	glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
 	glm::vec3 ambientColor = diffuseColor * glm::vec3(0.5f);
@@ -358,7 +361,7 @@ void RenderLight(Shader* shader) {
 	//shader->setMat4("modelTransform", model);
 
 
-	shader->setVec3("light.direction", lightDirection);
+	shader->setVec3("light.position", lightPos);
 	shader->setVec3("lightColour", lightColor);
 
 	Draw();
