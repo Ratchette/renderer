@@ -12,8 +12,8 @@
 
 class Camera {
 public:
-	void Init(GLFWwindow* window, Shader* shader);
-	void Update(Shader* shader, float deltaTime);
+	void Init(float curX, float curY);
+	void Update(float deltaTime);
 
 	void OnKeyPress(int key, int action);
 	void OnMouseMove(float xPos, float yPos);
@@ -21,6 +21,11 @@ public:
 
 	void Disable();
 	void Enable();
+
+	glm::mat4 GetViewMatrix();
+	glm::mat4 GetProjectionMatrix();
+
+	glm::vec3 GetCameraPosition();
 	
 private: 
 	const float DISPLAY_WIDTH = 800.0f;
@@ -30,6 +35,9 @@ private:
 	const float MOUSE_SENSITIVITY = 0.1f;
 
 	bool enabled = true;
+
+	glm::mat4 view			= glm::mat4(1.0f);
+	glm::mat4 projection	= glm::mat4(1.0f);
 
 	// movement
 	bool upKeyDown = false;
@@ -51,8 +59,8 @@ private:
 
 
 	void _Move(float deltaTime);
-	void _Tilt(Shader* shader);
-	void _Zoom(Shader* shader);
+	void _Tilt();
+	void _Zoom();
 };
 
 #endif CAMERA_H

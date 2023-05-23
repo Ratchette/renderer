@@ -28,10 +28,9 @@ const float SCREEN_WIDTH = 800.0f;
 const char* BOX_TEXTURE_FILE = "assets/container.jpg";
 const char* SIMILEY_TEXTURE_FILE = "assets/awesomeface.png";
 
-glm::vec3 lightPos(1.5f, 2.0f, 1.5f);
-
 static bool showImGui = false;
 static ImVec4 clear_color = ImVec4(0.2f, 0.3f, 0.3f, 1.0f);
+static glm::vec3 lightColor(1);
 
 std::vector<float> vertices = {
 	// positions          // normals           // texture coords
@@ -92,6 +91,7 @@ std::vector<glm::vec3> cubePositions = {
 };
 
 Camera camera;
+glm::vec3 lightPos(1.5f, 2.0f, 1.5f);
 
 static float deltaTime = 0.0f;
 static float lastFrame = 0.0f;
@@ -105,12 +105,15 @@ void glfw_scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
 GLFWwindow* InitWindow();
 void InitVertexConfig(GLuint* VAO, std::vector<float> vertices);
 GLuint InitTexture(const char* filepath, GLenum texture_unit);
+void InitCubeShader(Shader* shader);
+void InitLightShader(Shader* shader);
 
-void MoveLight(Shader* shader, glm::vec3* position);
-void RenderTriangle();
+void RenderCube(Shader* shader);
+void RenderLight(Shader* shader);
+void Draw();
 
 void InitImGUI(GLFWwindow** window);
-void RenderImGui(Shader* shader, ImVec4* clear_color, glm::vec3* lightColor);
+void RenderImGui(ImVec4* clear_color, glm::vec3* lightColor);
 
 
 int main() {
@@ -128,27 +131,15 @@ int main() {
 	InitTexture("assets/crate_specular.png", GL_TEXTURE1);
 	InitTexture("assets/matrix.jpg", GL_TEXTURE2);
 
-	cubeShader.use();
-	camera.Init(window, &cubeShader);
-	cubeShader.setVec3("lightPos", lightPos);
+	glEnable(GL_DEPTH_TEST);
 
-	cubeShader.setInt("material.diffuse", 0);
-	cubeShader.setInt("material.specular", 1);
-	cubeShader.setInt("material.emission", 2);
-	cubeShader.setFloat("material.shininess", 32.0f);
+	double curX;
+	double curY;
+	glfwGetCursorPos(window, &curX, &curY);
+	camera.Init(static_cast<float>(curX), static_cast<float>(curY));
 
-	cubeShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-	cubeShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
-	cubeShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-
-	lightShader.use();
-	camera.Init(window, &lightShader);
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, lightPos);
-	model = glm::scale(model, glm::vec3(0.2f));
-	lightShader.setMat4("modelTransform", model);
-
-	glm::vec3 lightColor(1);
+	InitCubeShader(&cubeShader);
+	InitLightShader(&lightShader);
 
 	InitImGUI(&window);
 
@@ -157,32 +148,15 @@ int main() {
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
+		camera.Update(deltaTime);
+
 		// clear screen
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Draw the cube
-		cubeShader.use();
-		cubeShader.setVec3("lightPos", lightPos);
-		camera.Update(&cubeShader, deltaTime);
-
-		glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
-		glm::vec3 ambientColor = diffuseColor * glm::vec3(0.5f);
-		cubeShader.setVec3("light.ambient", ambientColor);
-		cubeShader.setVec3("light.diffuse", diffuseColor);
-
-		RenderTriangle();
-
-		// Draw the light source
-		lightShader.use();
-		MoveLight(&lightShader, &lightPos);
-		lightShader.setVec3("lightPos", lightPos);
-		lightShader.setVec3("lightColour", lightColor);
-		camera.Update(&lightShader, 0);
-		RenderTriangle();
-
-
-		RenderImGui(&cubeShader, &clear_color, &lightColor);
+		RenderCube(&cubeShader);
+		RenderLight(&lightShader);
+		RenderImGui(&clear_color, &lightColor);
 
 		// check and call events and swap the buffers
 		glfwSwapBuffers(window);
@@ -275,10 +249,9 @@ GLuint InitTexture(const char* filepath, GLenum texture_unit) {
 	unsigned char* data = stbi_load(filepath, &width, &height, &nrChannels, 0);
 
 	if (data) {
-		GLenum format;
-		if (nrChannels == 1)
-			format = GL_RED;
-		else if (nrChannels == 3)
+		GLenum format = GL_RED;
+
+		if (nrChannels == 3)
 			format = GL_RGB;
 		else if (nrChannels == 4)
 			format = GL_RGBA;
@@ -301,25 +274,90 @@ GLuint InitTexture(const char* filepath, GLenum texture_unit) {
 	return textureID;
 }
 
-void MoveLight(Shader* shader, glm::vec3* position) {
+void InitCubeShader(Shader* shader) {
+	shader->use();
+
+	shader->setMat4("modelTransform", glm::mat4(1.0f));
+	shader->setMat4("viewTransform", camera.GetViewMatrix());
+	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
+
+	shader->setInt("material.diffuse", 0);
+	shader->setInt("material.specular", 1);
+	shader->setInt("material.emission", 2);
+	shader->setFloat("material.shininess", 32.0f);
+
+	shader->setVec3("lightPos", lightPos);
+	shader->setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+	shader->setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darken diffuse light a bit
+	shader->setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+
+	shader->setVec3("viewerPosition", camera.GetCameraPosition());
+}
+
+void InitLightShader(Shader* shader) {
+	shader->use();
+
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, lightPos);
+	model = glm::scale(model, glm::vec3(0.2f));
+	shader->setMat4("modelTransform", model);
+
+	shader->setMat4("viewTransform", camera.GetViewMatrix());
+	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
+}
+
+
+void RenderCube(Shader* shader) {
+	shader->use();
+
+	// The camera may have moved
+	shader->setVec3("viewerPosition", camera.GetCameraPosition());
+	shader->setMat4("viewTransform", camera.GetViewMatrix());
+	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
+
+	// The light source may have moved or changed colour
+	shader->setVec3("lightPos", lightPos);
+	
+
+	glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
+	glm::vec3 ambientColor = diffuseColor * glm::vec3(0.5f);
+	shader->setVec3("light.ambient", ambientColor);
+	shader->setVec3("light.diffuse", diffuseColor);
+
+	Draw();
+}
+
+void RenderLight(Shader* shader) {
 	float radius = 4.0f;
 	float angle = static_cast<float>(glfwGetTime() * 0.5);
 
+	shader->use();
+
+	// The camera may have moved
+	shader->setVec3("viewerPosition", camera.GetCameraPosition());
+	shader->setMat4("viewTransform", camera.GetViewMatrix());
+
+	// Rotate the light around the screen
 	glm::mat4 model = glm::mat4(1.0f);
-	position->x = glm::cos(angle) * radius;
-	position->z = glm::sin(angle) * radius;
+	lightPos.x = glm::cos(angle) * radius;
+	lightPos.z = glm::sin(angle) * radius;
 
-	model = glm::translate(model, *position);
+	model = glm::translate(model, lightPos);
 	model = glm::scale(model, glm::vec3(0.2f));
-
 	shader->setMat4("modelTransform", model);
+
+
+	shader->setVec3("lightPos", lightPos);
+	shader->setVec3("lightColour", lightColor);
+
+	Draw();
 }
 
-void RenderTriangle() {
+void Draw() {
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
-void RenderImGui(Shader* shader, ImVec4* clear_color, glm::vec3* lightColour) {
+void RenderImGui(ImVec4* clear_color, glm::vec3* lightColour) {
 	static float texture_mix = 0.2f;
 
 	ImGui_ImplOpenGL3_NewFrame();
@@ -334,7 +372,6 @@ void RenderImGui(Shader* shader, ImVec4* clear_color, glm::vec3* lightColour) {
 			ImGui::LabelText("label", "Value");
 			ImGui::ColorEdit3("Background Colour", (float*)clear_color);
 			ImGui::ColorEdit3("Light Colour", (float*)lightColour);
-			ImGui::SliderFloat("Texture Mixture", &texture_mix, 0.0f, 1.0f, "ratio = %.3f");
 
 			if (ImGui::Button("Fill")) {
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -346,8 +383,6 @@ void RenderImGui(Shader* shader, ImVec4* clear_color, glm::vec3* lightColour) {
 		}
 		ImGui::End();
 	}
-
-	shader->setFloat("texture_mix", texture_mix);
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

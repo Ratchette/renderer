@@ -1,45 +1,21 @@
 #include "camera.hpp"
 
-void Camera::Init(GLFWwindow* window, Shader* shader) {
-	glEnable(GL_DEPTH_TEST);
-
-	double curX;
-	double curY;
-	glfwGetCursorPos(window, &curX, &curY);
-
-	lastX = static_cast<float>(curX);
-	lastY = static_cast<float>(curY);
-
-	// Transform into world coordinates
-	glm::mat4 model = glm::mat4(1.0f);
-	// No rotation makes specular highlights easier to see
-	//model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	shader->setMat4("modelTransform", model);
-
-	// Transform into view coordinates
-	glm::mat4 view = glm::mat4(1.0f);
+void Camera::Init(float curX, float curY) {
+	lastX = curX;
+	lastY = curY;
+	
 	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-	shader->setMat4("viewTransform", view);
-
-	// Projection Matrix
-	glm::mat4 projection;
 	projection = glm::perspective(glm::radians(fov), DISPLAY_WIDTH / DISPLAY_HEIGHT, 0.1f, 100.0f);
-	shader->setMat4("perspectiveTransform", projection);
-
-	// Used to calculate specular lighting
-	shader->setVec3("viewerPosition", cameraPos);
 }
 
-void Camera::Update(Shader* shader, float deltaTime) {
+void Camera::Update(float deltaTime) {
 	if (!enabled) {
 		return;
 	}
 
-	_Zoom(shader);
-	_Tilt(shader);
+	_Zoom();
+	_Tilt();
 	_Move(deltaTime);
-
-	shader->setVec3("viewerPosition", cameraPos);
 }
 
 void Camera::Disable() {
@@ -65,7 +41,7 @@ void Camera::_Move(float deltaTime) {
 	}
 }
 
-void Camera::_Tilt(Shader* shader) {
+void Camera::_Tilt() {
 	// Change camera direction
 	glm::vec3 direction;
 	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
@@ -73,18 +49,16 @@ void Camera::_Tilt(Shader* shader) {
 	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 	cameraFront = glm::normalize(direction);
 
-	glm::mat4 view = glm::lookAt(
+	view = glm::lookAt(
 		cameraPos,
 		cameraPos + cameraFront,
 		cameraUp
 	);
-	shader->setMat4("viewTransform", view);
 }
 
-void Camera::_Zoom(Shader* shader) {
+void Camera::_Zoom() {
 	// Update FOV (zoom)
-	glm::mat4 projection = glm::perspective(glm::radians(fov), DISPLAY_WIDTH / DISPLAY_HEIGHT, 0.1f, 100.0f);
-	shader->setMat4("perspectiveTransform", projection);
+	projection = glm::perspective(glm::radians(fov), DISPLAY_WIDTH / DISPLAY_HEIGHT, 0.1f, 100.0f);
 }
 
 void Camera::OnKeyPress(int key, int action) {
@@ -148,4 +122,16 @@ void Camera::OnScroll(float yOffset) {
 	} else if (fov > 45.0f) {
 		fov = 45.0f;
 	}
+}
+
+
+glm::mat4 Camera::GetViewMatrix() {
+	return glm::mat4(view);
+}
+glm::mat4 Camera::GetProjectionMatrix() {
+	return glm::mat4(projection);
+}
+
+glm::vec3 Camera::GetCameraPosition() {
+	return glm::vec3(cameraPos);
 }
