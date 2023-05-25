@@ -90,6 +90,13 @@ std::vector<glm::vec3> cubePositions = {
 	glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
+std::vector<glm::vec3>  pointLightPositions = {
+	glm::vec3(0.7f,  0.2f,  2.0f),
+	glm::vec3(2.3f, -3.3f, -4.0f),
+	glm::vec3(-4.0f,  2.0f, -12.0f),
+	glm::vec3(0.0f,  0.0f, -3.0f)
+};
+
 Camera camera;
 glm::vec3 lightPos(1.5f, 2.0f, 1.5f);
 glm::vec3 lightDirection(-0.2f, -1.0f, -0.3f);
@@ -110,7 +117,7 @@ void InitCubeShader(Shader* shader);
 void InitLightShader(Shader* shader);
 
 void RenderCubes(Shader* shader);
-void RenderLight(Shader* shader);
+void RenderLights(Shader* shader);
 void Draw();
 
 void InitImGUI(GLFWwindow** window);
@@ -156,7 +163,7 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		RenderCubes(&cubeShader);
-		//RenderLight(&lightShader);
+		RenderLights(&lightShader);
 		RenderImGui(&clear_color, &lightColor);
 
 		// check and call events and swap the buffers
@@ -287,10 +294,46 @@ void InitCubeShader(Shader* shader) {
 	shader->setInt("material.emission", 2);
 	shader->setFloat("material.shininess", 32.0f);
 
-	shader->setVec3("light.position", camera.GetPosition());
-	shader->setVec3("light.direction", camera.GetDirection());
-	shader->setFloat("light.innerCutoff", glm::cos(glm::radians(12.5)));
-	shader->setFloat("light.outerCutoff", glm::cos(glm::radians(17.5)));
+	shader->setVec3("directionalLight.direction", -0.2f, -1.0f, -0.3f);
+	shader->setVec3("directionalLight.ambient", 0.05f, 0.05f, 0.05f);
+	shader->setVec3("directionalLight.diffuse", 0.4f, 0.4f, 0.4f);
+	shader->setVec3("directionalLight.specular", 0.5f, 0.5f, 0.5f);
+
+	shader->setVec3("pointLight[0].position", pointLightPositions[0]);
+	shader->setVec3("pointLight[0].diffuse", 0.8f, 0.8f, 0.8f);
+	shader->setVec3("pointLight[0].specular", 1.0f, 1.0f, 1.0f);
+	shader->setFloat("pointLight[0].constant", 1.0f);
+	shader->setFloat("pointLight[0].linear", 0.09f);
+	shader->setFloat("pointLight[0].quadratic", 0.032f);
+	// point light 2
+	shader->setVec3("pointLight[1].position", pointLightPositions[1]);
+	shader->setVec3("pointLight[1].ambient", 0.05f, 0.05f, 0.05f);
+	shader->setVec3("pointLight[1].diffuse", 0.8f, 0.8f, 0.8f);
+	shader->setVec3("pointLight[1].specular", 1.0f, 1.0f, 1.0f);
+	shader->setFloat("pointLight[1].constant", 1.0f);
+	shader->setFloat("pointLight[1].linear", 0.09f);
+	shader->setFloat("pointLight[1].quadratic", 0.032f);
+	// point light 3
+	shader->setVec3("pointLight[2].position", pointLightPositions[2]);
+	shader->setVec3("pointLight[2].ambient", 0.05f, 0.05f, 0.05f);
+	shader->setVec3("pointLight[2].diffuse", 0.8f, 0.8f, 0.8f);
+	shader->setVec3("pointLight[2].specular", 1.0f, 1.0f, 1.0f);
+	shader->setFloat("pointLight[2].constant", 1.0f);
+	shader->setFloat("pointLight[2].linear", 0.09f);
+	shader->setFloat("pointLight[2].quadratic", 0.032f);
+	// point light 4
+	shader->setVec3("pointLight[3].position", pointLightPositions[3]);
+	shader->setVec3("pointLight[3].ambient", 0.05f, 0.05f, 0.05f);
+	shader->setVec3("pointLight[3].diffuse", 0.8f, 0.8f, 0.8f);
+	shader->setVec3("pointLight[3].specular", 1.0f, 1.0f, 1.0f);
+	shader->setFloat("pointLight[3].constant", 1.0f);
+	shader->setFloat("pointLight[3].linear", 0.09f);
+	shader->setFloat("pointLight[3].quadratic", 0.032f);
+
+	//shader->setVec3("light.position", camera.GetPosition());
+	//shader->setVec3("light.direction", camera.GetDirection());
+	//shader->setFloat("light.innerCutoff", glm::cos(glm::radians(12.5)));
+	//shader->setFloat("light.outerCutoff", glm::cos(glm::radians(17.5)));
 
 	shader->setVec3("light.ambient", 0.1f, 0.1f, 0.1f);
 	shader->setVec3("light.diffuse", 0.8f, 0.8f, 0.8f); // darken diffuse light a bit
@@ -312,6 +355,8 @@ void InitLightShader(Shader* shader) {
 
 	shader->setMat4("viewTransform", camera.GetViewMatrix());
 	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
+
+	shader->setVec3("lightColour", lightColor);
 }
 
 
@@ -323,14 +368,14 @@ void RenderCubes(Shader* shader) {
 	shader->setMat4("viewTransform", camera.GetViewMatrix());
 	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
 
-	// The light source may have moved or changed colour
-	shader->setVec3("light.position", camera.GetPosition());
-	shader->setVec3("light.direction", camera.GetDirection());
+	//// The light source may have moved or changed colour
+	//shader->setVec3("light.position", camera.GetPosition());
+	//shader->setVec3("light.direction", camera.GetDirection());
 
-	glm::vec3 diffuseColor = lightColor * glm::vec3(0.8f);
-	glm::vec3 ambientColor = lightColor * glm::vec3(0.1f);
-	shader->setVec3("light.ambient", ambientColor);
-	shader->setVec3("light.diffuse", diffuseColor);
+	//glm::vec3 diffuseColor = lightColor * glm::vec3(0.8f);
+	//glm::vec3 ambientColor = lightColor * glm::vec3(0.1f);
+	//shader->setVec3("light.ambient", ambientColor);
+	//shader->setVec3("light.diffuse", diffuseColor);
 
 
 	for (int i = 0; i < cubePositions.size(); i++) {
@@ -346,7 +391,7 @@ void RenderCubes(Shader* shader) {
 	}
 }
 
-void RenderLight(Shader* shader) {
+void RenderLights(Shader* shader) {
 	float radius = 4.0f;
 	float angle = static_cast<float>(glfwGetTime() * 0.5);
 
@@ -355,6 +400,17 @@ void RenderLight(Shader* shader) {
 	// The camera may have moved
 	shader->setVec3("viewerPosition", camera.GetPosition());
 	shader->setMat4("viewTransform", camera.GetViewMatrix());
+
+	for (int i = 0; i < pointLightPositions.size(); i++) {
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, pointLightPositions[i]);
+		model = glm::scale(model, glm::vec3(0.2f));
+		shader->setMat4("modelTransform", model);
+
+		Draw();
+	}
+
+	
 
 	//// Rotate the light around the screen
 	//glm::mat4 model = glm::mat4(1.0f);
@@ -365,9 +421,8 @@ void RenderLight(Shader* shader) {
 	//model = glm::scale(model, glm::vec3(0.2f));
 	//shader->setMat4("modelTransform", model);
 
-
-	shader->setVec3("light.position", lightPos);
-	shader->setVec3("lightColour", lightColor);
+	/*shader->setVec3("light.position", lightPos);
+	shader->setVec3("lightColour", lightColor);*/
 
 	Draw();
 }
@@ -443,3 +498,8 @@ void glfw_mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 void glfw_scroll_callback(GLFWwindow* window, double xOffset, double yOffset) {
 	camera.OnScroll(static_cast<float>(yOffset));
 }
+
+
+
+
+

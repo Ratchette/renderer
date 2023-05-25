@@ -8,14 +8,14 @@ uniform mat4 modelTransform;
 uniform mat4 viewTransform;
 uniform mat4 perspectiveTransform;
 
-out vec3 Normal;
-out vec3 FragPosition;
-out vec2 TextureCoordinates;
+out vec3 fragmentNormal;
+out vec3 fragmentPosition;
+out vec2 textureCoordinates;
 
 void main() {
 	gl_Position = perspectiveTransform * viewTransform * modelTransform * vec4(aPos, 1.0f);
-	FragPosition = vec3(modelTransform * vec4(aPos, 1.0));
-	Normal = mat3(transpose(inverse(modelTransform))) * aNormal;
+	fragmentNormal = mat3(transpose(inverse(modelTransform))) * aNormal;
+	fragmentPosition = vec3(modelTransform * vec4(aPos, 1.0));
 
-	TextureCoordinates = aTexCoord;
+	textureCoordinates = aTexCoord;
 }
