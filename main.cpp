@@ -30,7 +30,8 @@ const char* SIMILEY_TEXTURE_FILE = "assets/awesomeface.png";
 
 static bool showImGui = false;
 static ImVec4 clear_color = ImVec4(0.07f, 0.11f, 0.11f, 1.0f);
-static glm::vec3 lightColor(1);
+static glm::vec3 globalLightColour(0.455, 0.375, 0.824);
+static glm::vec3 flashlightColour(0.858, 0.821, 0.606);
 
 std::vector<float> vertices = {
 	// positions          // normals           // texture coords
@@ -121,7 +122,7 @@ void RenderLights(Shader* shader);
 void Draw();
 
 void InitImGUI(GLFWwindow** window);
-void RenderImGui(ImVec4* clear_color, glm::vec3* lightColor);
+void RenderImGui(ImVec4* clear_color, glm::vec3* lightColor, glm::vec3* flashlightColour);
 
 
 int main() {
@@ -164,7 +165,7 @@ int main() {
 
 		RenderCubes(&cubeShader);
 		RenderLights(&lightShader);
-		RenderImGui(&clear_color, &lightColor);
+		RenderImGui(&clear_color, &globalLightColour, &flashlightColour);
 
 		// check and call events and swap the buffers
 		glfwSwapBuffers(window);
@@ -295,9 +296,9 @@ void InitCubeShader(Shader* shader) {
 	shader->setFloat("material.shininess", 32.0f);
 
 	shader->setVec3("directionalLight.direction", -0.2f, -1.0f, -0.3f);
-	shader->setVec3("directionalLight.ambient", 0.05f, 0.05f, 0.05f);
-	shader->setVec3("directionalLight.diffuse", 0.4f, 0.4f, 0.4f);
-	shader->setVec3("directionalLight.specular", 0.5f, 0.5f, 0.5f);
+	shader->setVec3("directionalLight.ambient", globalLightColour * 0.1f);
+	shader->setVec3("directionalLight.diffuse", globalLightColour * 0.8f);
+	shader->setVec3("directionalLight.specular", globalLightColour);
 
 	shader->setVec3("pointLight[0].position", pointLightPositions[0]);
 	shader->setVec3("pointLight[0].diffuse", 0.8f, 0.8f, 0.8f);
@@ -332,14 +333,14 @@ void InitCubeShader(Shader* shader) {
 
 	shader->setVec3("spotLight.position", camera.GetPosition());
 	shader->setVec3("spotLight.direction", camera.GetDirection());
-	shader->setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
-	shader->setVec3("spotLight.diffuse", 0.8f, 0.8f, 0.8f);
-	shader->setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+	shader->setVec3("spotLight.ambient", glm::vec3(0.0f));
+	shader->setVec3("spotLight.diffuse", flashlightColour * 0.8f);
+	shader->setVec3("spotLight.specular", flashlightColour);
 	shader->setFloat("spotLight.constant", 1.0f);
 	shader->setFloat("spotLight.linear", 0.09f);
 	shader->setFloat("spotLight.quadratic", 0.032f);
-	shader->setFloat("spotLight.beamWidth", glm::cos(glm::radians(12.5)));
-	shader->setFloat("spotLight.outerCutoff", glm::cos(glm::radians(17.5)));
+	shader->setFloat("spotLight.beamWidth", static_cast<float>(glm::cos(glm::radians(12.5))));
+	shader->setFloat("spotLight.outerCutoff", static_cast<float>(glm::cos(glm::radians(17.5))));
 
 	shader->setVec3("viewerPosition", camera.GetPosition());
 }
@@ -355,7 +356,8 @@ void InitLightShader(Shader* shader) {
 	shader->setMat4("viewTransform", camera.GetViewMatrix());
 	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
 
-	shader->setVec3("lightColour", lightColor);
+	// all spotlights are rendered as white boxes
+	shader->setVec3("lightColour", glm::vec3(1.0));
 }
 
 
@@ -367,13 +369,14 @@ void RenderCubes(Shader* shader) {
 	shader->setMat4("viewTransform", camera.GetViewMatrix());
 	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
 
+	shader->setVec3("directionalLight.ambient", globalLightColour * 0.1f);
+	shader->setVec3("directionalLight.diffuse", globalLightColour * 0.8f);
+	shader->setVec3("directionalLight.specular", globalLightColour);
+
 	shader->setVec3("spotLight.position", camera.GetPosition());
 	shader->setVec3("spotLight.direction", camera.GetDirection());
-
-	//glm::vec3 diffuseColor = lightColor * glm::vec3(0.8f);
-	//glm::vec3 ambientColor = lightColor * glm::vec3(0.1f);
-	//shader->setVec3("light.ambient", ambientColor);
-	//shader->setVec3("light.diffuse", diffuseColor);
+	shader->setVec3("directionalLight.diffuse", flashlightColour * 0.8f);
+	shader->setVec3("directionalLight.specular", flashlightColour);
 
 	for (int i = 0; i < cubePositions.size(); i++) {
 		glm::mat4 model = glm::mat4(1.0f);
@@ -426,7 +429,7 @@ void Draw() {
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
-void RenderImGui(ImVec4* clear_color, glm::vec3* lightColour) {
+void RenderImGui(ImVec4* clear_color, glm::vec3* directionalLightColour, glm::vec3* flashlightColour) {
 	static float texture_mix = 0.2f;
 
 	ImGui_ImplOpenGL3_NewFrame();
@@ -439,8 +442,9 @@ void RenderImGui(ImVec4* clear_color, glm::vec3* lightColour) {
 		ImGui::Begin("ImGui", &showImGui);
 		{
 			ImGui::LabelText("label", "Value");
-			ImGui::ColorEdit3("Background Colour", (float*)clear_color);
-			ImGui::ColorEdit3("Light Colour", (float*)lightColour);
+			ImGui::ColorEdit3("Background", (float*)clear_color);
+			ImGui::ColorEdit3("Directional light", (float*)directionalLightColour);
+			ImGui::ColorEdit3("Flashlight", (float*)flashlightColour);
 
 			if (ImGui::Button("Fill")) {
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
