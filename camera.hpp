@@ -25,7 +25,8 @@ public:
 	glm::mat4 GetViewMatrix();
 	glm::mat4 GetProjectionMatrix();
 
-	glm::vec3 GetCameraPosition();
+	glm::vec3 GetPosition();
+	glm::vec3 GetDirection();
 	
 private: 
 	const float DISPLAY_WIDTH = 800.0f;
