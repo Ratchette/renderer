@@ -330,17 +330,16 @@ void InitCubeShader(Shader* shader) {
 	shader->setFloat("pointLight[3].linear", 0.09f);
 	shader->setFloat("pointLight[3].quadratic", 0.032f);
 
-	//shader->setVec3("light.position", camera.GetPosition());
-	//shader->setVec3("light.direction", camera.GetDirection());
-	//shader->setFloat("light.innerCutoff", glm::cos(glm::radians(12.5)));
-	//shader->setFloat("light.outerCutoff", glm::cos(glm::radians(17.5)));
-
-	shader->setVec3("light.ambient", 0.1f, 0.1f, 0.1f);
-	shader->setVec3("light.diffuse", 0.8f, 0.8f, 0.8f); // darken diffuse light a bit
-	shader->setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-	shader->setFloat("light.constant", 1.0f);
-	shader->setFloat("light.linear", 0.09f);
-	shader->setFloat("light.quadratic", 0.032f);
+	shader->setVec3("spotLight.position", camera.GetPosition());
+	shader->setVec3("spotLight.direction", camera.GetDirection());
+	shader->setVec3("spotLight.ambient", 0.0f, 0.0f, 0.0f);
+	shader->setVec3("spotLight.diffuse", 0.8f, 0.8f, 0.8f);
+	shader->setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+	shader->setFloat("spotLight.constant", 1.0f);
+	shader->setFloat("spotLight.linear", 0.09f);
+	shader->setFloat("spotLight.quadratic", 0.032f);
+	shader->setFloat("spotLight.beamWidth", glm::cos(glm::radians(12.5)));
+	shader->setFloat("spotLight.outerCutoff", glm::cos(glm::radians(17.5)));
 
 	shader->setVec3("viewerPosition", camera.GetPosition());
 }
@@ -368,15 +367,13 @@ void RenderCubes(Shader* shader) {
 	shader->setMat4("viewTransform", camera.GetViewMatrix());
 	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
 
-	//// The light source may have moved or changed colour
-	//shader->setVec3("light.position", camera.GetPosition());
-	//shader->setVec3("light.direction", camera.GetDirection());
+	shader->setVec3("spotLight.position", camera.GetPosition());
+	shader->setVec3("spotLight.direction", camera.GetDirection());
 
 	//glm::vec3 diffuseColor = lightColor * glm::vec3(0.8f);
 	//glm::vec3 ambientColor = lightColor * glm::vec3(0.1f);
 	//shader->setVec3("light.ambient", ambientColor);
 	//shader->setVec3("light.diffuse", diffuseColor);
-
 
 	for (int i = 0; i < cubePositions.size(); i++) {
 		glm::mat4 model = glm::mat4(1.0f);
@@ -409,8 +406,6 @@ void RenderLights(Shader* shader) {
 
 		Draw();
 	}
-
-	
 
 	//// Rotate the light around the screen
 	//glm::mat4 model = glm::mat4(1.0f);
