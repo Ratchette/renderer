@@ -28,6 +28,12 @@
     <Filter Include="Source Files\camera">
       <UniqueIdentifier>{ebd8422c-e176-48ad-9e01-ac096d30c5ae}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\models">
+      <UniqueIdentifier>{0a145594-0ef0-4049-8696-cc6ba71d5c94}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\models\backpack">
+      <UniqueIdentifier>{f2ccda67-800a-436b-bf4c-0eb2d14051e0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -61,6 +67,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="model.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -110,6 +122,12 @@
     <ClInclude Include="shader.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="mesh.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="model.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\boxes_smiling.fs">
@@ -127,10 +145,38 @@
     <None Include="shaders\lighting_light.fs">
       <Filter>Source Files\shaders</Filter>
     </None>
+    <None Include="models\backpack\backpack.mtl">
+      <Filter>Source Files\models\backpack</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\container.jpg">
       <Filter>Resource Files\textures</Filter>
     </Image>
+    <Image Include="models\backpack\ao.jpg">
+      <Filter>Source Files\models\backpack</Filter>
+    </Image>
+    <Image Include="models\backpack\diffuse.jpg">
+      <Filter>Source Files\models\backpack</Filter>
+    </Image>
+    <Image Include="models\backpack\normal.png">
+      <Filter>Source Files\models\backpack</Filter>
+    </Image>
+    <Image Include="models\backpack\roughness.jpg">
+      <Filter>Source Files\models\backpack</Filter>
+    </Image>
+    <Image Include="models\backpack\specular.jpg">
+      <Filter>Source Files\models\backpack</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="models\backpack\backpack.obj">
+      <Filter>Source Files\models\backpack</Filter>
+    </Object>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="models\backpack\source_attribution.txt">
+      <Filter>Source Files\models\backpack</Filter>
+    </Text>
   </ItemGroup>
 </Project>
