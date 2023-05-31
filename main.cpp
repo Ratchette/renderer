@@ -94,6 +94,17 @@ vector<glm::vec3> cratePositions = {
 	glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
+vector<float> planeVertices = {
+	// positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
+	 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+	-5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
+	-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+
+	 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+	-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+	 5.0f, -0.5f, -5.0f,  2.0f, 2.0f
+};
+
 static void glfw_error_callback(int error, const char* description);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -106,7 +117,8 @@ void InitCratesShader(Shader* shader);
 void InitOutlineShader(Shader* shader);
 unsigned int LoadTexture(char const* path);
 
-void RenderCrates(Shader& shader);
+void RenderPlane(Shader& shader, GLuint& VAO, GLuint& texture);
+void RenderCrates(Shader& shader, GLuint& VAO, GLuint& texture);
 void RenderOutline(Shader& shader);
 
 void InitImGUI(GLFWwindow** window);
@@ -122,6 +134,7 @@ int main() {
 	Shader outlineShader("shaders/crate.vs", "shaders/outline.fs");
 
 	unsigned int crateTexture = LoadTexture("assets/crate.png");
+	unsigned int metalTexture = LoadTexture("assets/metal.png");
 	cratesShader.setInt("texture0", 0);
 
 	double curX;
@@ -129,8 +142,9 @@ int main() {
 	glfwGetCursorPos(window, &curX, &curY);
 	camera.Init(static_cast<float>(curX), static_cast<float>(curY));
 
-	GLuint cratesVBO;
-	InitVertices(cratesVBO, crateVertices);
+	GLuint cratesVAO, planeVAO;
+	InitVertices(cratesVAO, crateVertices);
+	InitVertices(planeVAO, planeVertices);
 
 	InitCratesShader(&cratesShader);
 	InitOutlineShader(&outlineShader);
@@ -151,10 +165,16 @@ int main() {
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+		{ // Draw the floor (plane)
+			glStencilMask(0x00);
+			// the cratesShader is basic enough to re-use here
+			RenderPlane(cratesShader, planeVAO, metalTexture);
+		}
+
 		{ // Draw the guitar
 			glStencilFunc(GL_ALWAYS, 1, 0xFF);
 			glStencilMask(0xFF);
-			RenderCrates(cratesShader);
+			RenderCrates(cratesShader, cratesVAO, crateTexture);
 		}
 
 		{ // Draw the outline
@@ -253,6 +273,8 @@ void InitVertices(GLuint& VAO, vector<float> vertices) {
 	// Texture coordinates
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+	glBindVertexArray(0);
 }
 
 void InitCratesShader(Shader* shader) {
@@ -261,6 +283,8 @@ void InitCratesShader(Shader* shader) {
 	shader->setMat4("modelTransform", glm::mat4(1.0f));
 	shader->setMat4("viewTransform", camera.GetViewMatrix());
 	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
+
+	shader->setInt("texture0", 0);
 }
 
 void InitOutlineShader(Shader* shader) {
@@ -276,49 +300,65 @@ void InitOutlineShader(Shader* shader) {
 	shader->setVec3("outlineColour", outlineColour);
 }
 
-
-void RenderCrates(Shader& shader) {
+void RenderPlane(Shader& shader, GLuint& VAO, GLuint& texture) {
 	shader.use();
+	glBindVertexArray(VAO);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	// The camera may have moved
+	shader.setMat4("modelTranform", glm::mat4(1.0f));
+	shader.setMat4("viewTransform", camera.GetViewMatrix());
+	shader.setMat4("perspectiveTransform", camera.GetProjectionMatrix());
+	shader.setVec3("viewerPosition", camera.GetPosition());
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindVertexArray(0);
+}
+
+void RenderCrates(Shader& shader, GLuint& VAO, GLuint& texture) {
+	shader.use();
+	glBindVertexArray(VAO);
+	glBindTexture(GL_TEXTURE_2D, texture);
 
 	// The camera may have moved
 	shader.setVec3("viewerPosition", camera.GetPosition());
 	shader.setMat4("viewTransform", camera.GetViewMatrix());
 	shader.setMat4("perspectiveTransform", camera.GetProjectionMatrix());
 
-	for (unsigned int i = 0; i < cratePositions.size(); i++) {
-		glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-		model = glm::translate(model, cratePositions[i]);
+	// Crates
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
+	shader.setMat4("modelTransform", model);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		float angle = 20.0f * i;
-		model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-		shader.setMat4("modelTransform", model);
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-	}
+	model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
+	shader.setMat4("modelTransform", model);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
 void RenderOutline(Shader& shader) {
 	shader.use();
 
+	shader.setVec3("outlineColour", outlineColour);
+
 	// The camera may have moved
 	shader.setVec3("viewerPosition", camera.GetPosition());
 	shader.setMat4("viewTransform", camera.GetViewMatrix());
 	shader.setMat4("perspectiveTransform", camera.GetProjectionMatrix());
 
-	shader.setVec3("outlineColour", outlineColour);
+	// Crates
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
+	model = glm::scale(model, glm::vec3(1.1f));
+	shader.setMat4("modelTransform", model);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
 
-	for (unsigned int i = 0; i < cratePositions.size(); i++) {
-		glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-		model = glm::translate(model, cratePositions[i]);
-
-		float angle = 20.0f * i;
-		model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-
-		model = glm::scale(model, glm::vec3(1.1f));
-		shader.setMat4("modelTransform", model);
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-	}
+	model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
+	model = glm::scale(model, glm::vec3(1.1f));
+	shader.setMat4("modelTransform", model);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
 void RenderImGui(ImVec4* clear_color) {
