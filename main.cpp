@@ -15,6 +15,8 @@
 #include <iostream>
 #include <vector>
 
+#include "stb_image.h"
+
 #include "shader.hpp"
 #include "camera.hpp"
 #include "model.hpp"
@@ -26,7 +28,7 @@ const float SCREEN_WIDTH = 800.0f;
 static bool showImGui = false;
 static ImVec4 clear_color = ImVec4(0.07f, 0.11f, 0.11f, 1.0f);
 static glm::vec3 globalLightColour(1.0);
-//static glm::vec3 globalLightColour(0.455, 0.375, 0.824);
+static glm::vec3 outlineColour(0.0);
 
 Camera camera;
 glm::vec3 lightDirection(-0.2f, -1.0f, -0.3f);
@@ -34,6 +36,63 @@ glm::vec3 lightDirection(-0.2f, -1.0f, -0.3f);
 static float deltaTime = 0.0f;
 static float lastFrame = 0.0f;
 
+vector<float> crateVertices = {
+	// positions          // texture Coords
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+};
+
+vector<glm::vec3> cratePositions = {
+	glm::vec3(0.0f,  0.0f,  0.0f),
+	glm::vec3(2.0f,  5.0f, -15.0f),
+	glm::vec3(-1.5f, -2.2f, -2.5f),
+	glm::vec3(-3.8f, -2.0f, -12.3f),
+	glm::vec3(2.4f, -0.4f, -3.5f),
+	glm::vec3(-1.7f,  3.0f, -7.5f),
+	glm::vec3(1.3f, -2.0f, -2.5f),
+	glm::vec3(1.5f,  2.0f, -2.5f),
+	glm::vec3(1.5f,  0.2f, -1.5f),
+	glm::vec3(-1.3f,  1.0f, -1.5f)
+};
 
 static void glfw_error_callback(int error, const char* description);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -42,11 +101,16 @@ void glfw_mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void glfw_scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
 
 GLFWwindow* InitWindow();
-void InitShader(Shader* shader);
-void Render(Shader& shader, Model& model);
+void InitVertices(GLuint& VAO, vector<float> vertices);
+void InitCratesShader(Shader* shader);
+void InitOutlineShader(Shader* shader);
+unsigned int LoadTexture(char const* path);
+
+void RenderCrates(Shader& shader);
+void RenderOutline(Shader& shader);
 
 void InitImGUI(GLFWwindow** window);
-void RenderImGui(ImVec4* clear_color, glm::vec3* lightColor);
+void RenderImGui(ImVec4* clear_color);
 
 
 int main() {
@@ -54,17 +118,27 @@ int main() {
 	window = InitWindow();
 	assert(window);
 
-	glEnable(GL_DEPTH_TEST);
-	Shader shader("shaders/backpack.vs", "shaders/backpack.fs");
-	Model model("models/backpack/backpack.obj");
+	Shader cratesShader("shaders/crate.vs", "shaders/crate.fs");
+	Shader outlineShader("shaders/crate.vs", "shaders/outline.fs");
+
+	unsigned int crateTexture = LoadTexture("assets/crate.png");
+	cratesShader.setInt("texture0", 0);
 
 	double curX;
 	double curY;
 	glfwGetCursorPos(window, &curX, &curY);
 	camera.Init(static_cast<float>(curX), static_cast<float>(curY));
 
-	InitShader(&shader);
+	GLuint cratesVBO;
+	InitVertices(cratesVBO, crateVertices);
+
+	InitCratesShader(&cratesShader);
+	InitOutlineShader(&outlineShader);
 	InitImGUI(&window);
+
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_STENCIL_TEST);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	while (!glfwWindowShouldClose(window)) {
 		float currentFrame = (float)glfwGetTime();
@@ -75,10 +149,29 @@ int main() {
 
 		// clear screen
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-		Render(shader, model);
-		RenderImGui(&clear_color, &globalLightColour);
+		{ // Draw the guitar
+			glStencilFunc(GL_ALWAYS, 1, 0xFF);
+			glStencilMask(0xFF);
+			RenderCrates(cratesShader);
+		}
+
+		{ // Draw the outline
+			glDisable(GL_DEPTH_TEST);
+
+			glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+			glStencilMask(0x00);
+
+			RenderOutline(outlineShader);
+
+			glEnable(GL_DEPTH_TEST);
+
+			glStencilFunc(GL_ALWAYS, 1, 0xFF);
+			glStencilMask(0xFF);
+		}
+
+		RenderImGui(&clear_color);
 
 		// check and call events and swap the buffers
 		glfwSwapBuffers(window);
@@ -142,34 +235,49 @@ void InitImGUI(GLFWwindow** window) {
 	ImGui_ImplOpenGL3_Init(glsl_version);
 }
 
-void InitShader(Shader* shader) {
+void InitVertices(GLuint& VAO, vector<float> vertices) {
+	GLuint VBO;
+
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
+
+	// Vertex positions
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+
+	// Texture coordinates
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+}
+
+void InitCratesShader(Shader* shader) {
+	shader->use();
+
+	shader->setMat4("modelTransform", glm::mat4(1.0f));
+	shader->setMat4("viewTransform", camera.GetViewMatrix());
+	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
+}
+
+void InitOutlineShader(Shader* shader) {
 	shader->use();
 
 	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-	model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));		// it's a bit too big for our scene, so scale it down
-
+	model = glm::scale(model, glm::vec3(1.1f, 1.1f, 1.1f));
 	shader->setMat4("modelTransform", model);
+
 	shader->setMat4("viewTransform", camera.GetViewMatrix());
 	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
 
-	//shader->setInt("material.diffuse", 0);
-	//shader->setInt("material.specular", 1);
-	//shader->setInt("material.emission", 2);
-	shader->setFloat("specular_shininess", 32.0f);
-
-	shader->setVec3("directionalLight.direction", -0.2f, -1.0f, -0.3f);
-	shader->setVec3("directionalLight.ambient", globalLightColour * 0.1f);
-	shader->setVec3("directionalLight.diffuse", globalLightColour * 0.8f);
-	shader->setVec3("directionalLight.specular", globalLightColour);
-
-	shader->setVec3("viewerPosition", camera.GetPosition());
-
-	shader->use();
+	shader->setVec3("outlineColour", outlineColour);
 }
 
 
-void Render(Shader& shader, Model& model) {
+void RenderCrates(Shader& shader) {
 	shader.use();
 
 	// The camera may have moved
@@ -177,14 +285,43 @@ void Render(Shader& shader, Model& model) {
 	shader.setMat4("viewTransform", camera.GetViewMatrix());
 	shader.setMat4("perspectiveTransform", camera.GetProjectionMatrix());
 
-	shader.setVec3("directionalLight.ambient", globalLightColour * 0.1f);
-	shader.setVec3("directionalLight.diffuse", globalLightColour * 0.8f);
-	shader.setVec3("directionalLight.specular", globalLightColour);
+	for (unsigned int i = 0; i < cratePositions.size(); i++) {
+		glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+		model = glm::translate(model, cratePositions[i]);
 
-	model.Draw(shader);
+		float angle = 20.0f * i;
+		model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+		shader.setMat4("modelTransform", model);
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
 }
 
-void RenderImGui(ImVec4* clear_color, glm::vec3* directionalLightColour) {
+void RenderOutline(Shader& shader) {
+	shader.use();
+
+	// The camera may have moved
+	shader.setVec3("viewerPosition", camera.GetPosition());
+	shader.setMat4("viewTransform", camera.GetViewMatrix());
+	shader.setMat4("perspectiveTransform", camera.GetProjectionMatrix());
+
+	shader.setVec3("outlineColour", outlineColour);
+
+	for (unsigned int i = 0; i < cratePositions.size(); i++) {
+		glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+		model = glm::translate(model, cratePositions[i]);
+
+		float angle = 20.0f * i;
+		model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+
+		model = glm::scale(model, glm::vec3(1.1f));
+		shader.setMat4("modelTransform", model);
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
+}
+
+void RenderImGui(ImVec4* clear_color) {
 	static float texture_mix = 0.2f;
 
 	ImGui_ImplOpenGL3_NewFrame();
@@ -198,7 +335,8 @@ void RenderImGui(ImVec4* clear_color, glm::vec3* directionalLightColour) {
 		{
 			ImGui::LabelText("label", "Value");
 			ImGui::ColorEdit3("Background", (float*)clear_color);
-			ImGui::ColorEdit3("Directional light", (float*)directionalLightColour);
+			ImGui::ColorEdit3("Directional light", &globalLightColour[0]);
+			ImGui::ColorEdit3("Outline colour", &outlineColour[0]);
 
 			if (ImGui::Button("Fill")) {
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -213,6 +351,40 @@ void RenderImGui(ImVec4* clear_color, glm::vec3* directionalLightColour) {
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+unsigned int LoadTexture(char const* path) {
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+
+	stbi_set_flip_vertically_on_load(true);
+	int width, height, nrComponents;
+	unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+	if (data) {
+		GLenum format;
+		if (nrComponents == 1)
+			format = GL_RED;
+		else if (nrComponents == 3)
+			format = GL_RGB;
+		else if (nrComponents == 4)
+			format = GL_RGBA;
+
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		stbi_image_free(data);
+	} else {
+		std::cout << "Texture failed to load at path: " << path << std::endl;
+		stbi_image_free(data);
+	}
+
+	return textureID;
 }
 
 

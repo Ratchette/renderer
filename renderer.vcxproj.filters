@@ -128,6 +128,9 @@
     <ClInclude Include="model.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="filesystem.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\boxes_smiling.fs">
@@ -145,38 +148,25 @@
     <None Include="shaders\lighting_light.fs">
       <Filter>Source Files\shaders</Filter>
     </None>
-    <None Include="models\backpack\backpack.mtl">
-      <Filter>Source Files\models\backpack</Filter>
+    <None Include="shaders\outline.fs">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\backpack.fs">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\backpack.vs">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\crate.fs">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\crate.vs">
+      <Filter>Source Files\shaders</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\container.jpg">
       <Filter>Resource Files\textures</Filter>
     </Image>
-    <Image Include="models\backpack\ao.jpg">
-      <Filter>Source Files\models\backpack</Filter>
-    </Image>
-    <Image Include="models\backpack\diffuse.jpg">
-      <Filter>Source Files\models\backpack</Filter>
-    </Image>
-    <Image Include="models\backpack\normal.png">
-      <Filter>Source Files\models\backpack</Filter>
-    </Image>
-    <Image Include="models\backpack\roughness.jpg">
-      <Filter>Source Files\models\backpack</Filter>
-    </Image>
-    <Image Include="models\backpack\specular.jpg">
-      <Filter>Source Files\models\backpack</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <Object Include="models\backpack\backpack.obj">
-      <Filter>Source Files\models\backpack</Filter>
-    </Object>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="models\backpack\source_attribution.txt">
-      <Filter>Source Files\models\backpack</Filter>
-    </Text>
   </ItemGroup>
 </Project>
