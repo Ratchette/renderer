@@ -36,6 +36,17 @@ glm::vec3 lightDirection(-0.2f, -1.0f, -0.3f);
 static float deltaTime = 0.0f;
 static float lastFrame = 0.0f;
 
+vector<float> planeVertices = {
+	// positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
+	 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+	-5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
+	-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+
+	 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+	-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+	 5.0f, -0.5f, -5.0f,  2.0f, 2.0f
+};
+
 vector<float> crateVertices = {
 	// positions          // texture Coords
 	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -94,16 +105,26 @@ vector<glm::vec3> cratePositions = {
 	glm::vec3(-1.3f,  1.0f, -1.5f)
 };
 
-vector<float> planeVertices = {
-	// positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
-	 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-	-5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
-	-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+vector<float> transparentVertices = {
+	// positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
+	0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+	0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
+	1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
 
-	 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-	-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
-	 5.0f, -0.5f, -5.0f,  2.0f, 2.0f
+	0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
+	1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+	1.0f,  0.5f,  0.0f,  1.0f,  0.0f
 };
+
+vector<glm::vec3> vegetationPositions = {
+	glm::vec3(-1.5f,  0.0f, -0.48f),
+	glm::vec3( 1.5f,  0.0f,  0.51f),
+	glm::vec3( 0.0f,  0.0f,  0.7f),
+	glm::vec3(-0.3f,  0.0f, -2.3f),
+	glm::vec3( 0.5f,  0.0f, -0.6f)
+};
+
+
 
 static void glfw_error_callback(int error, const char* description);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -119,7 +140,8 @@ unsigned int LoadTexture(char const* path);
 
 void RenderPlane(Shader& shader, GLuint& VAO, GLuint& texture);
 void RenderCrates(Shader& shader, GLuint& VAO, GLuint& texture);
-void RenderOutline(Shader& shader);
+void RenderVegetation(Shader& shader, GLuint& VAO, GLuint& texture);
+void RenderOutline(Shader& shader, GLuint& VAO);
 
 void InitImGUI(GLFWwindow** window);
 void RenderImGui(ImVec4* clear_color);
@@ -135,6 +157,7 @@ int main() {
 
 	unsigned int crateTexture = LoadTexture("assets/crate.png");
 	unsigned int metalTexture = LoadTexture("assets/metal.png");
+	unsigned int vegetationTexture = LoadTexture("assets/grass.png");
 	cratesShader.setInt("texture0", 0);
 
 	double curX;
@@ -142,9 +165,10 @@ int main() {
 	glfwGetCursorPos(window, &curX, &curY);
 	camera.Init(static_cast<float>(curX), static_cast<float>(curY));
 
-	GLuint cratesVAO, planeVAO;
+	GLuint cratesVAO, planeVAO, vegetationVAO;
 	InitVertices(cratesVAO, crateVertices);
 	InitVertices(planeVAO, planeVertices);
+	InitVertices(vegetationVAO, transparentVertices);
 
 	InitCratesShader(&cratesShader);
 	InitOutlineShader(&outlineShader);
@@ -169,9 +193,10 @@ int main() {
 			glStencilMask(0x00);
 			// the cratesShader is basic enough to re-use here
 			RenderPlane(cratesShader, planeVAO, metalTexture);
+			RenderVegetation(cratesShader, vegetationVAO, vegetationTexture);
 		}
 
-		{ // Draw the guitar
+		{ // Draw the cubes
 			glStencilFunc(GL_ALWAYS, 1, 0xFF);
 			glStencilMask(0xFF);
 			RenderCrates(cratesShader, cratesVAO, crateTexture);
@@ -183,7 +208,7 @@ int main() {
 			glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
 			glStencilMask(0x00);
 
-			RenderOutline(outlineShader);
+			RenderOutline(outlineShader, cratesVAO);
 
 			glEnable(GL_DEPTH_TEST);
 
@@ -337,8 +362,23 @@ void RenderCrates(Shader& shader, GLuint& VAO, GLuint& texture) {
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
-void RenderOutline(Shader& shader) {
+void RenderVegetation(Shader& shader, GLuint& VAO, GLuint& texture) {
 	shader.use();
+	glBindVertexArray(VAO);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	for (unsigned int i = 0; i < vegetationPositions.size(); i++) {
+		glm::mat4 model(1.0);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, vegetationPositions[i]);
+		shader.setMat4("modelTransform", model);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+	}
+}
+
+void RenderOutline(Shader& shader, GLuint& VAO) {
+	shader.use();
+	glBindVertexArray(VAO);
 
 	shader.setVec3("outlineColour", outlineColour);
 
@@ -397,7 +437,7 @@ unsigned int LoadTexture(char const* path) {
 	unsigned int textureID;
 	glGenTextures(1, &textureID);
 
-	stbi_set_flip_vertically_on_load(true);
+	/*stbi_set_flip_vertically_on_load(true);*/
 	int width, height, nrComponents;
 	unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
 	if (data) {
@@ -413,8 +453,8 @@ unsigned int LoadTexture(char const* path) {
 		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT); // for this tutorial: use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes texels from next repeat 
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
