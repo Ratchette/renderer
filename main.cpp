@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <iostream>
+#include <map>
 #include <vector>
 
 #include "stb_image.h"
@@ -116,14 +117,13 @@ vector<float> transparentVertices = {
 	1.0f,  0.5f,  0.0f,  1.0f,  0.0f
 };
 
-vector<glm::vec3> vegetationPositions = {
+vector<glm::vec3> windowPositions = {
 	glm::vec3(-1.5f,  0.0f, -0.48f),
 	glm::vec3( 1.5f,  0.0f,  0.51f),
 	glm::vec3( 0.0f,  0.0f,  0.7f),
 	glm::vec3(-0.3f,  0.0f, -2.3f),
 	glm::vec3( 0.5f,  0.0f, -0.6f)
 };
-
 
 
 static void glfw_error_callback(int error, const char* description);
@@ -140,7 +140,7 @@ unsigned int LoadTexture(char const* path);
 
 void RenderPlane(Shader& shader, GLuint& VAO, GLuint& texture);
 void RenderCrates(Shader& shader, GLuint& VAO, GLuint& texture);
-void RenderVegetation(Shader& shader, GLuint& VAO, GLuint& texture);
+void RenderWindows(Shader& shader, GLuint& VAO, GLuint& texture);
 void RenderOutline(Shader& shader, GLuint& VAO);
 
 void InitImGUI(GLFWwindow** window);
@@ -157,7 +157,7 @@ int main() {
 
 	unsigned int crateTexture = LoadTexture("assets/crate.png");
 	unsigned int metalTexture = LoadTexture("assets/metal.png");
-	unsigned int vegetationTexture = LoadTexture("assets/grass.png");
+	unsigned int windowTexture = LoadTexture("assets/blending_transparent_window.png");
 	cratesShader.setInt("texture0", 0);
 
 	double curX;
@@ -165,10 +165,10 @@ int main() {
 	glfwGetCursorPos(window, &curX, &curY);
 	camera.Init(static_cast<float>(curX), static_cast<float>(curY));
 
-	GLuint cratesVAO, planeVAO, vegetationVAO;
+	GLuint cratesVAO, planeVAO, windowVAO;
 	InitVertices(cratesVAO, crateVertices);
 	InitVertices(planeVAO, planeVertices);
-	InitVertices(vegetationVAO, transparentVertices);
+	InitVertices(windowVAO, transparentVertices);
 
 	InitCratesShader(&cratesShader);
 	InitOutlineShader(&outlineShader);
@@ -177,6 +177,9 @@ int main() {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_STENCIL_TEST);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 
 	while (!glfwWindowShouldClose(window)) {
 		float currentFrame = (float)glfwGetTime();
@@ -193,13 +196,13 @@ int main() {
 			glStencilMask(0x00);
 			// the cratesShader is basic enough to re-use here
 			RenderPlane(cratesShader, planeVAO, metalTexture);
-			RenderVegetation(cratesShader, vegetationVAO, vegetationTexture);
 		}
 
 		{ // Draw the cubes
 			glStencilFunc(GL_ALWAYS, 1, 0xFF);
 			glStencilMask(0xFF);
 			RenderCrates(cratesShader, cratesVAO, crateTexture);
+			RenderWindows(cratesShader, windowVAO, windowTexture);
 		}
 
 		{ // Draw the outline
@@ -208,7 +211,7 @@ int main() {
 			glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
 			glStencilMask(0x00);
 
-			RenderOutline(outlineShader, cratesVAO);
+			//RenderOutline(outlineShader, cratesVAO);
 
 			glEnable(GL_DEPTH_TEST);
 
@@ -331,7 +334,7 @@ void RenderPlane(Shader& shader, GLuint& VAO, GLuint& texture) {
 	glBindTexture(GL_TEXTURE_2D, texture);
 
 	// The camera may have moved
-	shader.setMat4("modelTranform", glm::mat4(1.0f));
+	shader.setMat4("modelTransform", glm::mat4(1.0f));
 	shader.setMat4("viewTransform", camera.GetViewMatrix());
 	shader.setMat4("perspectiveTransform", camera.GetProjectionMatrix());
 	shader.setVec3("viewerPosition", camera.GetPosition());
@@ -362,15 +365,21 @@ void RenderCrates(Shader& shader, GLuint& VAO, GLuint& texture) {
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
-void RenderVegetation(Shader& shader, GLuint& VAO, GLuint& texture) {
+void RenderWindows(Shader& shader, GLuint& VAO, GLuint& texture) {
 	shader.use();
 	glBindVertexArray(VAO);
 	glBindTexture(GL_TEXTURE_2D, texture);
 
-	for (unsigned int i = 0; i < vegetationPositions.size(); i++) {
+	glm::vec3 cameraPosition = camera.GetPosition();
+	map<float,glm::vec3> sorted;
+	for (unsigned int i = 0; i < windowPositions.size(); i++) {
+		float distance = glm::length(cameraPosition - windowPositions[i]);
+		sorted[distance] = windowPositions[i];
+	}
+
+	for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
 		glm::mat4 model(1.0);
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, vegetationPositions[i]);
+		model = glm::translate(model, it->second);
 		shader.setMat4("modelTransform", model);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 	}
