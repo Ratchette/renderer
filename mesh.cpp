@@ -27,12 +27,30 @@ Mesh::Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, textureCoordinates));
 
+	// vertex tangent
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Tangent));
+
+	// vertex bitangent
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
+
+	// ids
+	glEnableVertexAttribArray(5);
+	glVertexAttribIPointer(5, 4, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, m_BoneIDs));
+
+	// weights
+	glEnableVertexAttribArray(6);
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, m_Weights));
+
 	glBindVertexArray(0);
 }
 
 void Mesh::Draw(Shader& shader) {
 	unsigned int diffuseNum = 1;
 	unsigned int specularNum = 1;
+	unsigned int normalNum = 1;
+	unsigned int heightNum = 1;
 
 	for (int i = 0; i < textures.size(); i++) {
 		glActiveTexture(GL_TEXTURE0 + i);
@@ -44,6 +62,10 @@ void Mesh::Draw(Shader& shader) {
 			number = std::to_string(diffuseNum++);
 		} else if (name == "texture_specular") {
 			number = std::to_string(specularNum++);
+		} else if (name == "texture_normal") {
+			number = std::to_string(normalNum++);
+		} else if (name == "texture_height") {
+			number = std::to_string(heightNum++);
 		}
 
 		shader.setInt((name + number).c_str(), i);
@@ -53,4 +75,6 @@ void Mesh::Draw(Shader& shader) {
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
+
+	glActiveTexture(GL_TEXTURE0);
 }
