@@ -10,6 +10,8 @@
 
 #include "shader.hpp"
 
+extern bool showImGui;
+
 class Camera {
 public:
 	void Init(float curX, float curY);
@@ -29,8 +31,8 @@ public:
 	glm::vec3 GetDirection();
 	
 private: 
-	const float DISPLAY_WIDTH = 800.0f;
-	const float DISPLAY_HEIGHT = 600.0f;
+	const float DISPLAY_WIDTH = 1200.0f;
+	const float DISPLAY_HEIGHT = 900.0f;
 
 	const float MOVE_SPEED = 2.5f;
 	const float MOUSE_SENSITIVITY = 0.1f;

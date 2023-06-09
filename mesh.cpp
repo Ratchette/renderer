@@ -47,10 +47,10 @@ Mesh::Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture
 }
 
 void Mesh::Draw(Shader& shader) {
-	unsigned int diffuseNum = 1;
-	unsigned int specularNum = 1;
-	unsigned int normalNum = 1;
-	unsigned int heightNum = 1;
+	unsigned int diffuseNum = 0;
+	unsigned int specularNum = 0;
+	unsigned int normalNum = 0;
+	unsigned int heightNum = 0;
 
 	for (int i = 0; i < textures.size(); i++) {
 		glActiveTexture(GL_TEXTURE0 + i);

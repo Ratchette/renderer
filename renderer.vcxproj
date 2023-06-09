@@ -173,13 +173,11 @@
     <None Include="shaders\backpack.fs" />
     <None Include="shaders\backpack.vs" />
     <None Include="shaders\boxes_smiling.fs" />
-    <None Include="shaders\boxes_smiling.vs" />
-    <None Include="shaders\crate.fs" />
-    <None Include="shaders\crate.vs" />
-    <None Include="shaders\lighting_light.fs" />
+    <None Include="shaders\basic.vs" />
+    <None Include="shaders\basic_texture.fs" />
     <None Include="shaders\lighting_cube.fs" />
     <None Include="shaders\lighting.vs" />
-    <None Include="shaders\outline.fs" />
+    <None Include="shaders\basic_colour.fs" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\container.jpg" />
