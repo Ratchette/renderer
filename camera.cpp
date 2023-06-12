@@ -62,6 +62,10 @@ void Camera::_Zoom() {
 }
 
 void Camera::OnKeyPress(int key, int action) {
+	if (!enabled) {
+		return;
+	}
+
 	if (key == GLFW_KEY_W) {
 		if (action == GLFW_PRESS) {
 			upKeyDown = true;
@@ -96,6 +100,10 @@ void Camera::OnKeyPress(int key, int action) {
 }
 
 void Camera::OnMouseMove(float xPos, float yPos) {
+	if (!enabled) {
+		return;
+	}
+
 	float xOffset = (xPos - lastX) * MOUSE_SENSITIVITY;
 	float yOffset = (lastY - yPos) * MOUSE_SENSITIVITY;
 
@@ -115,6 +123,10 @@ void Camera::OnMouseMove(float xPos, float yPos) {
 }
 
 void Camera::OnScroll(float yOffset) {
+	if (!enabled) {
+		return;
+	}
+
 	fov -= yOffset;
 
 	if (fov < 1.0f) {

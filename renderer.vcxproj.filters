@@ -39,9 +39,6 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="glad.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="imgui\imgui.cpp">
       <Filter>Source Files\imgui</Filter>
     </ClCompile>
@@ -73,6 +70,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="model.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="glad\src\glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -131,12 +131,18 @@
     <ClInclude Include="filesystem.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="glad\include\glad\glad.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="glad\include\KHR\khrplatform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\boxes_smiling.fs">
       <Filter>Source Files\shaders</Filter>
     </None>
-    <None Include="shaders\boxes_smiling.vs">
+    <None Include="shaders\basic.vs">
       <Filter>Source Files\shaders</Filter>
     </None>
     <None Include="shaders\lighting_cube.fs">
@@ -145,10 +151,7 @@
     <None Include="shaders\lighting.vs">
       <Filter>Source Files\shaders</Filter>
     </None>
-    <None Include="shaders\lighting_light.fs">
-      <Filter>Source Files\shaders</Filter>
-    </None>
-    <None Include="shaders\outline.fs">
+    <None Include="shaders\basic_colour.fs">
       <Filter>Source Files\shaders</Filter>
     </None>
     <None Include="shaders\backpack.fs">
@@ -157,10 +160,7 @@
     <None Include="shaders\backpack.vs">
       <Filter>Source Files\shaders</Filter>
     </None>
-    <None Include="shaders\crate.fs">
-      <Filter>Source Files\shaders</Filter>
-    </None>
-    <None Include="shaders\crate.vs">
+    <None Include="shaders\basic_texture.fs">
       <Filter>Source Files\shaders</Filter>
     </None>
   </ItemGroup>

@@ -71,8 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\Windows\Program Files %28x86%29\GLFW\glfw-3.3.8\include;D:\Windows\Program Files\Assimp\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Windows\Program Files %28x86%29\GLFW\glfw-3.3.8\lib-vc2022;D:\Windows\Program Files\Assimp\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\Windows\Program Files\glfw\glfw-3.3.8\include;D:\Windows\Program Files\Assimp\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\Windows\Program Files\glfw\glfw-3.3.8\lib-vc2022;D:\Windows\Program Files\Assimp\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -136,7 +136,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="camera.cpp" />
-    <ClCompile Include="glad.c" />
+    <ClCompile Include="glad\src\glad.c" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
     <ClCompile Include="imgui\imgui_draw.cpp" />
@@ -152,6 +152,8 @@
   <ItemGroup>
     <ClInclude Include="camera.hpp" />
     <ClInclude Include="filesystem.hpp" />
+    <ClInclude Include="glad\include\glad\glad.h" />
+    <ClInclude Include="glad\include\KHR\khrplatform.h" />
     <ClInclude Include="glm\glm.hpp" />
     <ClInclude Include="glm\gtc\matrix_transform.hpp" />
     <ClInclude Include="glm\gtc\type_ptr.hpp" />
@@ -173,13 +175,11 @@
     <None Include="shaders\backpack.fs" />
     <None Include="shaders\backpack.vs" />
     <None Include="shaders\boxes_smiling.fs" />
-    <None Include="shaders\boxes_smiling.vs" />
-    <None Include="shaders\crate.fs" />
-    <None Include="shaders\crate.vs" />
-    <None Include="shaders\lighting_light.fs" />
+    <None Include="shaders\basic.vs" />
+    <None Include="shaders\basic_texture.fs" />
     <None Include="shaders\lighting_cube.fs" />
     <None Include="shaders\lighting.vs" />
-    <None Include="shaders\outline.fs" />
+    <None Include="shaders\basic_colour.fs" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\container.jpg" />

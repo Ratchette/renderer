@@ -7,8 +7,8 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
-#include <glad/glad.h> 
-#include <GLFW/glfw3.h>
+#include "glad/include/glad/glad.h"
+#include <glfw/glfw3.h>
 
 #include <stdio.h>
 #include <assert.h>
@@ -23,68 +23,61 @@
 #include "model.hpp"
 
 const char* glsl_version = "#version 330";
-const float SCREEN_HEIGHT = 600.0f;
-const float SCREEN_WIDTH = 800.0f;
+const float SCREEN_WIDTH = 1200.0f;
+const float SCREEN_HEIGHT = 900.0f;
 
-static bool showImGui = false;
+bool showImGui = false;
 static ImVec4 clear_color = ImVec4(0.07f, 0.11f, 0.11f, 1.0f);
-static glm::vec3 globalLightColour(1.0);
+static glm::vec3 globalLightColour(0.455, 0.375, 0.824);
+static glm::vec3 pointLightColour(0.584f, 0.475f, 0.173f);
+static glm::vec3 flashlightColour(1.0);
 static glm::vec3 outlineColour(0.0);
 
 Camera camera;
 glm::vec3 lightDirection(-0.2f, -1.0f, -0.3f);
-
-static float deltaTime = 0.0f;
-static float lastFrame = 0.0f;
-
-vector<float> planeVertices = {
-	// positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
-	 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-	-5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
-	-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
-
-	 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-	-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
-	 5.0f, -0.5f, -5.0f,  2.0f, 2.0f
+vector<glm::vec3> pointLightPositions = {
+	glm::vec3(0.7f,  0.2f,  2.0f),
+	glm::vec3(2.3f, 4.0f, 0.0f),
+	glm::vec3(-4.0f,  2.0f, -7.0f),
+	glm::vec3(0.0f,  1.5f, -1.75f)
 };
-
-vector<float> crateVertices = {
-	// positions          // texture Coords
+vector<float> cubeVertices = {
+	// positions          // texture coords
 	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
 	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
 	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
 	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
 	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
+						  
 	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
 	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
 	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
 	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
 	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
+						  
 	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
 	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
 	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
 	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
+						  
 	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
 	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
 	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
 	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
+						  
 	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
 	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
 	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
 	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
 	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
+						  
 	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
 	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
 	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
@@ -93,36 +86,19 @@ vector<float> crateVertices = {
 	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
 
-vector<glm::vec3> cratePositions = {
-	glm::vec3(0.0f,  0.0f,  0.0f),
-	glm::vec3(2.0f,  5.0f, -15.0f),
-	glm::vec3(-1.5f, -2.2f, -2.5f),
-	glm::vec3(-3.8f, -2.0f, -12.3f),
-	glm::vec3(2.4f, -0.4f, -3.5f),
-	glm::vec3(-1.7f,  3.0f, -7.5f),
-	glm::vec3(1.3f, -2.0f, -2.5f),
-	glm::vec3(1.5f,  2.0f, -2.5f),
-	glm::vec3(1.5f,  0.2f, -1.5f),
-	glm::vec3(-1.3f,  1.0f, -1.5f)
-};
 
-vector<float> transparentVertices = {
-	// positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
-	0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
-	0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
-	1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
+static float deltaTime = 0.0f;
+static float lastFrame = 0.0f;
 
-	0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
-	1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
-	1.0f,  0.5f,  0.0f,  1.0f,  0.0f
-};
+vector<float> floorVertices = {
+	// positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
+	 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+	-5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
+	-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
 
-vector<glm::vec3> windowPositions = {
-	glm::vec3(-1.5f,  0.0f, -0.48f),
-	glm::vec3( 1.5f,  0.0f,  0.51f),
-	glm::vec3( 0.0f,  0.0f,  0.7f),
-	glm::vec3(-0.3f,  0.0f, -2.3f),
-	glm::vec3( 0.5f,  0.0f, -0.6f)
+	 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+	-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+	 5.0f, -0.5f, -5.0f,  2.0f, 2.0f
 };
 
 
@@ -134,14 +110,14 @@ void glfw_scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
 
 GLFWwindow* InitWindow();
 void InitVertices(GLuint& VAO, vector<float> vertices);
-void InitCratesShader(Shader* shader);
-void InitOutlineShader(Shader* shader);
+void InitFloorShader(Shader* shader);
+void InitPointLightsShader(Shader* shader);
+void InitGuitarShader(Shader* shader);
 unsigned int LoadTexture(char const* path);
 
-void RenderPlane(Shader& shader, GLuint& VAO, GLuint& texture);
-void RenderCrates(Shader& shader, GLuint& VAO, GLuint& texture);
-void RenderWindows(Shader& shader, GLuint& VAO, GLuint& texture);
-void RenderOutline(Shader& shader, GLuint& VAO);
+void RenderFloor(Shader& shader, GLuint& VAO, GLuint& texture);
+void RenderPointLights(Shader& shader, GLuint& VAO);
+void RenderGuitar(Shader& shader, Model& model);
 
 void InitImGUI(GLFWwindow** window);
 void RenderImGui(ImVec4* clear_color);
@@ -152,34 +128,30 @@ int main() {
 	window = InitWindow();
 	assert(window);
 
-	Shader cratesShader("shaders/crate.vs", "shaders/crate.fs");
-	Shader outlineShader("shaders/crate.vs", "shaders/outline.fs");
+	Shader floorShader("shaders/basic.vs", "shaders/basic_texture.fs");
+	unsigned int floorTexture = LoadTexture("assets/metal.png");
+	floorShader.setInt("texture0", 0);
 
-	unsigned int crateTexture = LoadTexture("assets/crate.png");
-	unsigned int metalTexture = LoadTexture("assets/metal.png");
-	unsigned int windowTexture = LoadTexture("assets/blending_transparent_window.png");
-	cratesShader.setInt("texture0", 0);
+	Shader lightsShader("shaders/basic.vs", "shaders/basic_colour.fs");
+
+	Shader guitarShader("shaders/backpack.vs", "shaders/backpack.fs");
+	Model guitarModel("models/backpack/backpack.obj");
 
 	double curX;
 	double curY;
 	glfwGetCursorPos(window, &curX, &curY);
 	camera.Init(static_cast<float>(curX), static_cast<float>(curY));
 
-	GLuint cratesVAO, planeVAO, windowVAO;
-	InitVertices(cratesVAO, crateVertices);
-	InitVertices(planeVAO, planeVertices);
-	InitVertices(windowVAO, transparentVertices);
+	GLuint floorVAO, lightsVAO;
+	InitVertices(floorVAO, floorVertices);
+	InitVertices(lightsVAO, cubeVertices);
 
-	InitCratesShader(&cratesShader);
-	InitOutlineShader(&outlineShader);
+	InitFloorShader(&floorShader);
+	InitPointLightsShader(&lightsShader);
+	InitGuitarShader(&guitarShader);
 	InitImGUI(&window);
 
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_STENCIL_TEST);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 
 	while (!glfwWindowShouldClose(window)) {
 		float currentFrame = (float)glfwGetTime();
@@ -190,34 +162,11 @@ int main() {
 
 		// clear screen
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-		{ // Draw the floor (plane)
-			glStencilMask(0x00);
-			// the cratesShader is basic enough to re-use here
-			RenderPlane(cratesShader, planeVAO, metalTexture);
-		}
-
-		{ // Draw the cubes
-			glStencilFunc(GL_ALWAYS, 1, 0xFF);
-			glStencilMask(0xFF);
-			RenderCrates(cratesShader, cratesVAO, crateTexture);
-			RenderWindows(cratesShader, windowVAO, windowTexture);
-		}
-
-		{ // Draw the outline
-			glDisable(GL_DEPTH_TEST);
-
-			glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-			glStencilMask(0x00);
-
-			//RenderOutline(outlineShader, cratesVAO);
-
-			glEnable(GL_DEPTH_TEST);
-
-			glStencilFunc(GL_ALWAYS, 1, 0xFF);
-			glStencilMask(0xFF);
-		}
+		RenderFloor(floorShader, floorVAO, floorTexture);
+		RenderPointLights(lightsShader, lightsVAO);
+		RenderGuitar(guitarShader, guitarModel);
 
 		RenderImGui(&clear_color);
 
@@ -305,7 +254,7 @@ void InitVertices(GLuint& VAO, vector<float> vertices) {
 	glBindVertexArray(0);
 }
 
-void InitCratesShader(Shader* shader) {
+void InitFloorShader(Shader* shader) {
 	shader->use();
 
 	shader->setMat4("modelTransform", glm::mat4(1.0f));
@@ -315,20 +264,76 @@ void InitCratesShader(Shader* shader) {
 	shader->setInt("texture0", 0);
 }
 
-void InitOutlineShader(Shader* shader) {
+void InitPointLightsShader(Shader* shader) {
 	shader->use();
-
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::scale(model, glm::vec3(1.1f, 1.1f, 1.1f));
-	shader->setMat4("modelTransform", model);
 
 	shader->setMat4("viewTransform", camera.GetViewMatrix());
 	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
 
-	shader->setVec3("outlineColour", outlineColour);
+	shader->setVec3("colour", pointLightColour);
 }
 
-void RenderPlane(Shader& shader, GLuint& VAO, GLuint& texture) {
+void InitGuitarShader(Shader* shader) {
+	shader->use();
+
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.0f, 1.25f, 0.0f)); // translate it down so it's at the center of the scene
+
+	shader->setMat4("modelTransform", model);
+	shader->setMat4("viewTransform", camera.GetViewMatrix());
+	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
+
+	shader->setFloat("specular_shininess", 32.0f);
+
+	shader->setVec3("directionalLight.direction", -0.2f, -1.0f, -0.3f);
+	shader->setVec3("directionalLight.ambient", globalLightColour * 0.05f);
+	shader->setVec3("directionalLight.diffuse", globalLightColour * 0.6f);
+	shader->setVec3("directionalLight.specular", globalLightColour);
+
+	// point light 1
+	shader->setVec3("pointLight[0].position", pointLightPositions[0]);
+	shader->setVec3("pointLight[0].diffuse", pointLightColour * 0.8f);
+	shader->setVec3("pointLight[0].specular", pointLightColour);
+	shader->setFloat("pointLight[0].constant", 1.0f);
+	shader->setFloat("pointLight[0].linear", 0.09f);
+	shader->setFloat("pointLight[0].quadratic", 0.032f);
+	// point light 2
+	shader->setVec3("pointLight[1].position", pointLightPositions[1]);
+	shader->setVec3("pointLight[1].diffuse", pointLightColour * 0.8f);
+	shader->setVec3("pointLight[1].specular", pointLightColour);
+	shader->setFloat("pointLight[1].constant", 1.0f);
+	shader->setFloat("pointLight[1].linear", 0.09f);
+	shader->setFloat("pointLight[1].quadratic", 0.032f);
+	// point light 3
+	shader->setVec3("pointLight[2].position", pointLightPositions[2]);
+	shader->setVec3("pointLight[2].diffuse", pointLightColour * 0.8f);
+	shader->setVec3("pointLight[2].specular", pointLightColour);
+	shader->setFloat("pointLight[2].constant", 1.0f);
+	shader->setFloat("pointLight[2].linear", 0.09f);
+	shader->setFloat("pointLight[2].quadratic", 0.032f);
+	// point light 4
+	shader->setVec3("pointLight[3].position", pointLightPositions[3]);
+	shader->setVec3("pointLight[3].diffuse", pointLightColour * 0.8f);
+	shader->setVec3("pointLight[3].specular", pointLightColour);
+	shader->setFloat("pointLight[3].constant", 1.0f);
+	shader->setFloat("pointLight[3].linear", 0.09f);
+	shader->setFloat("pointLight[3].quadratic", 0.032f);
+
+	shader->setVec3("spotLight.position", camera.GetPosition());
+	shader->setVec3("spotLight.direction", camera.GetDirection());
+	shader->setVec3("spotLight.ambient", glm::vec3(0.0f));
+	shader->setVec3("spotLight.diffuse", flashlightColour * 0.8f);
+	shader->setVec3("spotLight.specular", flashlightColour);
+	shader->setFloat("spotLight.constant", 1.0f);
+	shader->setFloat("spotLight.linear", 0.09f);
+	shader->setFloat("spotLight.quadratic", 0.032f);
+	shader->setFloat("spotLight.beamWidth", static_cast<float>(glm::cos(glm::radians(12.5))));
+	shader->setFloat("spotLight.outerCutoff", static_cast<float>(glm::cos(glm::radians(17.5))));
+
+	shader->setVec3("viewerPosition", camera.GetPosition());
+}
+
+void RenderFloor(Shader& shader, GLuint& VAO, GLuint& texture) {
 	shader.use();
 	glBindVertexArray(VAO);
 	glBindTexture(GL_TEXTURE_2D, texture);
@@ -337,77 +342,72 @@ void RenderPlane(Shader& shader, GLuint& VAO, GLuint& texture) {
 	shader.setMat4("modelTransform", glm::mat4(1.0f));
 	shader.setMat4("viewTransform", camera.GetViewMatrix());
 	shader.setMat4("perspectiveTransform", camera.GetProjectionMatrix());
-	shader.setVec3("viewerPosition", camera.GetPosition());
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	glBindVertexArray(0);
 }
 
-void RenderCrates(Shader& shader, GLuint& VAO, GLuint& texture) {
+void RenderGuitar(Shader& shader, Model& model) {
 	shader.use();
-	glBindVertexArray(VAO);
-	glBindTexture(GL_TEXTURE_2D, texture);
 
-	// The camera may have moved
 	shader.setVec3("viewerPosition", camera.GetPosition());
 	shader.setMat4("viewTransform", camera.GetViewMatrix());
 	shader.setMat4("perspectiveTransform", camera.GetProjectionMatrix());
 
-	// Crates
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
-	shader.setMat4("modelTransform", model);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
+	shader.setVec3("directionalLight.ambient", globalLightColour * 0.1f);
+	shader.setVec3("directionalLight.diffuse", globalLightColour * 0.8f);
+	shader.setVec3("directionalLight.specular", globalLightColour);
 
-	model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
-	shader.setMat4("modelTransform", model);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
+	shader.setVec3("spotLight.position", camera.GetPosition());
+	shader.setVec3("spotLight.direction", camera.GetDirection());
+	shader.setVec3("spotLight.diffuse", flashlightColour * 0.8f);
+	shader.setVec3("spotLight.specular", flashlightColour);
+
+	shader.setVec3("pointLight[0].diffuse", pointLightColour * 0.8f);
+	shader.setVec3("pointLight[0].specular", pointLightColour);
+	shader.setVec3("pointLight[1].diffuse", pointLightColour * 0.8f);
+	shader.setVec3("pointLight[1].specular", pointLightColour);
+	shader.setVec3("pointLight[2].diffuse", pointLightColour * 0.8f);
+	shader.setVec3("pointLight[2].specular", pointLightColour);
+	shader.setVec3("pointLight[3].diffuse", pointLightColour * 0.8f);
+	shader.setVec3("pointLight[3].specular", pointLightColour);
+
+	model.Draw(shader);
 }
 
-void RenderWindows(Shader& shader, GLuint& VAO, GLuint& texture) {
+void RenderPointLights(Shader& shader, GLuint& VAO) {
 	shader.use();
 	glBindVertexArray(VAO);
-	glBindTexture(GL_TEXTURE_2D, texture);
 
-	glm::vec3 cameraPosition = camera.GetPosition();
-	map<float,glm::vec3> sorted;
-	for (unsigned int i = 0; i < windowPositions.size(); i++) {
-		float distance = glm::length(cameraPosition - windowPositions[i]);
-		sorted[distance] = windowPositions[i];
-	}
+	shader.setVec3("colour", pointLightColour);
 
-	for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
-		glm::mat4 model(1.0);
-		model = glm::translate(model, it->second);
+	shader.setMat4("viewTransform", camera.GetViewMatrix());
+	shader.setMat4("perspectiveTransform", camera.GetProjectionMatrix());
+
+	float radius = 4.0f;
+	float angle = static_cast<float>(glfwGetTime() * 0.5);
+
+	for (int i = 0; i < pointLightPositions.size(); i++) {
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, pointLightPositions[i]);
+		model = glm::scale(model, glm::vec3(0.2f));
 		shader.setMat4("modelTransform", model);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
-}
 
-void RenderOutline(Shader& shader, GLuint& VAO) {
-	shader.use();
-	glBindVertexArray(VAO);
+	//// Rotate the light around the screen
+	//glm::mat4 model = glm::mat4(1.0f);
+	//lightPos.x = glm::cos(angle) * radius;
+	//lightPos.z = glm::sin(angle) * radius;
 
-	shader.setVec3("outlineColour", outlineColour);
+	//model = glm::translate(model, lightPos);
+	//model = glm::scale(model, glm::vec3(0.2f));
+	//shader->setMat4("modelTransform", model);
 
-	// The camera may have moved
-	shader.setVec3("viewerPosition", camera.GetPosition());
-	shader.setMat4("viewTransform", camera.GetViewMatrix());
-	shader.setMat4("perspectiveTransform", camera.GetProjectionMatrix());
+	/*shader->setVec3("light.position", lightPos);
+	shader->setVec3("lightColour", lightColor);*/
 
-	// Crates
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
-	model = glm::scale(model, glm::vec3(1.1f));
-	shader.setMat4("modelTransform", model);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
-
-	model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
-	model = glm::scale(model, glm::vec3(1.1f));
-	shader.setMat4("modelTransform", model);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
 void RenderImGui(ImVec4* clear_color) {
@@ -425,6 +425,8 @@ void RenderImGui(ImVec4* clear_color) {
 			ImGui::LabelText("label", "Value");
 			ImGui::ColorEdit3("Background", (float*)clear_color);
 			ImGui::ColorEdit3("Directional light", &globalLightColour[0]);
+			ImGui::ColorEdit3("Point lights", &pointLightColour[0]);
+			ImGui::ColorEdit3("Flashlight", &flashlightColour[0]);
 			ImGui::ColorEdit3("Outline colour", &outlineColour[0]);
 
 			if (ImGui::Button("Fill")) {
@@ -490,7 +492,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+	if (key == GLFW_KEY_DELETE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
 	}
 
