@@ -43,47 +43,48 @@ vector<glm::vec3> pointLightPositions = {
 };
 vector<float> cubeVertices = {
 	// positions          // texture coords
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-						  
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-						  
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-						  
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-						  
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-						  
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+	// Back face
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-left
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right         
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+	// Front face
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // top-left
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+	// Left face
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-left
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+	// Right face
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right         
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left     
+	 // Bottom face
+	 -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+	  0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left
+	  0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
+	  0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
+	 -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+	 -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+	 // Top face
+	 -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+	  0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+	  0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right     
+	  0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+	 -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+	 -0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // bottom-left        
 };
 
 
@@ -93,12 +94,12 @@ static float lastFrame = 0.0f;
 vector<float> floorVertices = {
 	// positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
 	 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-	-5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
 	-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+	-5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
 
 	 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-	-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
-	 5.0f, -0.5f, -5.0f,  2.0f, 2.0f
+	 5.0f, -0.5f, -5.0f,  2.0f, 2.0f,
+	- 5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
 };
 
 
@@ -152,6 +153,7 @@ int main() {
 	InitImGUI(&window);
 
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
 
 	while (!glfwWindowShouldClose(window)) {
 		float currentFrame = (float)glfwGetTime();
@@ -162,7 +164,7 @@ int main() {
 
 		// clear screen
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		RenderFloor(floorShader, floorVAO, floorTexture);
 		RenderPointLights(lightsShader, lightsVAO);
@@ -422,13 +424,32 @@ void RenderImGui(ImVec4* clear_color) {
 
 		ImGui::Begin("ImGui", &showImGui);
 		{
-			ImGui::LabelText("label", "Value");
-			ImGui::ColorEdit3("Background", (float*)clear_color);
-			ImGui::ColorEdit3("Directional light", &globalLightColour[0]);
-			ImGui::ColorEdit3("Point lights", &pointLightColour[0]);
-			ImGui::ColorEdit3("Flashlight", &flashlightColour[0]);
-			ImGui::ColorEdit3("Outline colour", &outlineColour[0]);
+			if (ImGui::CollapsingHeader("Lighting")) {
+				ImGui::LabelText("label", "Value");
+				ImGui::ColorEdit3("Background", (float*)clear_color);
+				ImGui::ColorEdit3("Directional light", &globalLightColour[0]);
+				ImGui::ColorEdit3("Point lights", &pointLightColour[0]);
+				ImGui::ColorEdit3("Flashlight", &flashlightColour[0]);
+				ImGui::ColorEdit3("Outline colour", &outlineColour[0]);
+			}
 
+			if (ImGui::CollapsingHeader("Culling")) {
+				if (ImGui::Button("No Culling")) {
+					glDisable(GL_CULL_FACE);
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Cull Back Faces")) {
+					glEnable(GL_CULL_FACE);
+					glCullFace(GL_BACK);
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Cull Front Faces")) {
+					glEnable(GL_CULL_FACE);
+					glCullFace(GL_FRONT);
+				}
+			}
+
+			ImGui::Text("Unsorted options");
 			if (ImGui::Button("Fill")) {
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			}
@@ -470,7 +491,8 @@ unsigned int LoadTexture(char const* path) {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		stbi_image_free(data);
-	} else {
+	}
+	else {
 		std::cout << "Texture failed to load at path: " << path << std::endl;
 		stbi_image_free(data);
 	}
@@ -502,7 +524,8 @@ void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, in
 		if (showImGui) {
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 			camera.Disable();
-		} else {
+		}
+		else {
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 			camera.Enable();
 		}
