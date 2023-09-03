@@ -139,34 +139,49 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\boxes_smiling.fs">
-      <Filter>Source Files\shaders</Filter>
-    </None>
-    <None Include="shaders\basic.vs">
-      <Filter>Source Files\shaders</Filter>
-    </None>
-    <None Include="shaders\lighting_cube.fs">
-      <Filter>Source Files\shaders</Filter>
-    </None>
-    <None Include="shaders\lighting.vs">
-      <Filter>Source Files\shaders</Filter>
-    </None>
-    <None Include="shaders\basic_colour.fs">
-      <Filter>Source Files\shaders</Filter>
-    </None>
-    <None Include="shaders\backpack.fs">
-      <Filter>Source Files\shaders</Filter>
-    </None>
-    <None Include="shaders\backpack.vs">
-      <Filter>Source Files\shaders</Filter>
-    </None>
-    <None Include="shaders\basic_texture.fs">
-      <Filter>Source Files\shaders</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <Image Include="assets\container.jpg">
       <Filter>Resource Files\textures</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\backpack.frag">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\backpack.vert">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\basic.vert">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\basic_colour.frag">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\basic_texture.frag">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\boxes_smiling.frag">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\lighting.vert">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\lighting_cube.frag">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\lighting_light.frag">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\quad.frag">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\quad.vert">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\mirror.vert">
+      <Filter>Source Files\shaders</Filter>
+    </None>
+    <None Include="shaders\mirror.frag">
+      <Filter>Source Files\shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

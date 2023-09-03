@@ -102,6 +102,40 @@ vector<float> floorVertices = {
 	- 5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
 };
 
+vector<float> quadVertices = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+	// positions			// texCoords
+	-1.0f,  1.0f,  0.0f,	0.0f, 1.0f,
+	-1.0f, -1.0f,  0.0f,	0.0f, 0.0f,
+	 1.0f, -1.0f,  0.0f,	1.0f, 0.0f,
+
+	-1.0f,  1.0f,  0.0f,	0.0f, 1.0f,
+	 1.0f, -1.0f,  0.0f,	1.0f, 0.0f,
+	 1.0f,  1.0f,  0.0f,	1.0f, 1.0f
+};
+
+vector<float> mirrorVertices = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+	// positions			// texCoords
+	-0.3f,  0.97f,  0.0f,	0.0f, 1.0f,
+	-0.3f,  0.67f,   0.0f,	0.0f, 0.0f,
+	 0.3f,  0.67f,   0.0f,	1.0f, 0.0f,
+
+	-0.3f,  0.97f,  0.0f,	0.0f, 1.0f,
+	 0.3f,  0.67f,   0.0f,	1.0f, 0.0f,
+	 0.3f,  0.97f,  0.0f,	1.0f, 1.0f
+};
+
+vector<float> mirrorBorderVertices = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+	// positions			// texCoords
+	-0.33f,  1.0f,   0.0f,	0.0f, 1.0f,
+	-0.33f,  0.64f,  0.0f,	0.0f, 0.0f,
+	 0.33f,  0.64f,  0.0f,	1.0f, 0.0f,
+
+	-0.33f,  1.0f,   0.0f,	0.0f, 1.0f,
+	 0.33f,  0.64f,  0.0f,	1.0f, 0.0f,
+	 0.33f,  1.0f,   0.0f,	1.0f, 1.0f
+};
+
+
 
 static void glfw_error_callback(int error, const char* description);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -111,6 +145,7 @@ void glfw_scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
 
 GLFWwindow* InitWindow();
 void InitVertices(GLuint& VAO, vector<float> vertices);
+void InitCustomFramebuffer(GLuint& framebuffer, GLuint& textureColorBuffer);
 void InitFloorShader(Shader* shader);
 void InitPointLightsShader(Shader* shader);
 void InitGuitarShader(Shader* shader);
@@ -119,6 +154,8 @@ unsigned int LoadTexture(char const* path);
 void RenderFloor(Shader& shader, GLuint& VAO, GLuint& texture);
 void RenderPointLights(Shader& shader, GLuint& VAO);
 void RenderGuitar(Shader& shader, Model& model);
+void RenderOutline(Shader& shader, GLuint& VAO, glm::vec3& colour);
+void RenderCustomFramebuffer(Shader& shader, GLuint& VAO, GLuint& texture);
 
 void InitImGUI(GLFWwindow** window);
 void RenderImGui(ImVec4* clear_color);
@@ -129,23 +166,35 @@ int main() {
 	window = InitWindow();
 	assert(window);
 
-	Shader floorShader("shaders/basic.vs", "shaders/basic_texture.fs");
+	Shader floorShader("shaders/basic.vert", "shaders/basic_texture.frag");
 	unsigned int floorTexture = LoadTexture("assets/metal.png");
 	floorShader.setInt("texture0", 0);
 
-	Shader lightsShader("shaders/basic.vs", "shaders/basic_colour.fs");
+	Shader lightsShader("shaders/basic.vert", "shaders/basic_colour.frag");
 
-	Shader guitarShader("shaders/backpack.vs", "shaders/backpack.fs");
+	Shader guitarShader("shaders/backpack.vert", "shaders/backpack.frag");
 	Model guitarModel("models/backpack/backpack.obj");
+
+	Shader quadShader("shaders/quad.vert", "shaders/quad.frag");
+	Shader borderShader("shaders/quad.vert", "shaders/basic_colour.frag");
+	Shader mirrorShader("shaders/mirror.vert", "shaders/mirror.frag");
+	mirrorShader.setFloat("screen_width", SCREEN_WIDTH);
 
 	double curX;
 	double curY;
 	glfwGetCursorPos(window, &curX, &curY);
 	camera.Init(static_cast<float>(curX), static_cast<float>(curY));
 
-	GLuint floorVAO, lightsVAO;
+	GLuint floorVAO, lightsVAO, quadVAO, mirrorVAO, mirrorBorderVAO;
 	InitVertices(floorVAO, floorVertices);
 	InitVertices(lightsVAO, cubeVertices);
+	InitVertices(quadVAO, quadVertices);
+
+	InitVertices(mirrorVAO, mirrorVertices);
+	InitVertices(mirrorBorderVAO, mirrorBorderVertices);
+
+	GLuint framebuffer, textureColorBuffer;
+	InitCustomFramebuffer(framebuffer, textureColorBuffer);
 
 	InitFloorShader(&floorShader);
 	InitPointLightsShader(&lightsShader);
@@ -162,13 +211,26 @@ int main() {
 
 		camera.Update(deltaTime);
 
-		// clear screen
+		// Render to custom framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+		glEnable(GL_DEPTH_TEST);
+		
+		// Draw Scene
 		RenderFloor(floorShader, floorVAO, floorTexture);
 		RenderPointLights(lightsShader, lightsVAO);
 		RenderGuitar(guitarShader, guitarModel);
+
+		// Render custom framebuffer to default framebuffer without modification
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		RenderCustomFramebuffer(quadShader, quadVAO, textureColorBuffer);
+
+		// Render a mirror image of the custom framebuffer to the top of the default framebuffer
+		RenderOutline(borderShader, mirrorBorderVAO, outlineColour);
+		RenderCustomFramebuffer(mirrorShader, mirrorVAO, textureColorBuffer);
 
 		RenderImGui(&clear_color);
 
@@ -254,6 +316,36 @@ void InitVertices(GLuint& VAO, vector<float> vertices) {
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
 	glBindVertexArray(0);
+}
+
+void InitCustomFramebuffer(GLuint& framebuffer, GLuint& textureColorBuffer) {
+	glGenFramebuffers(1, &framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+	// Create a texture for colours
+	glGenTextures(1, &textureColorBuffer);
+	glBindTexture(GL_TEXTURE_2D, textureColorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, static_cast<int>(SCREEN_WIDTH), static_cast<int>(SCREEN_HEIGHT), 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorBuffer, 0);
+
+	// Create a renderbuffer for depth & stencil
+	GLuint rbo;
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, static_cast<int>(SCREEN_WIDTH), static_cast<int>(SCREEN_HEIGHT));
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		std::cout << "ERROR::FRAMEBUFFER:: framebuffer is incomplete." << std::endl;
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void InitFloorShader(Shader* shader) {
@@ -410,6 +502,51 @@ void RenderPointLights(Shader& shader, GLuint& VAO) {
 	/*shader->setVec3("light.position", lightPos);
 	shader->setVec3("lightColour", lightColor);*/
 
+}
+
+void RenderOutline(Shader& shader, GLuint& VAO, glm::vec3& colour) {
+	// Don't apply face culling to default framebuffer
+	//		At the moment the default framebuffer is a quad, so culling faces doesn't make sense in this context
+	bool isCullingEnabled = glIsEnabled(GL_CULL_FACE);
+	if (isCullingEnabled) {
+		glDisable(GL_CULL_FACE);
+	}
+
+	shader.use();
+	shader.setVec3("colour", colour);
+
+	glBindVertexArray(VAO);
+
+	glDisable(GL_DEPTH_TEST);
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindVertexArray(0);
+
+	if (isCullingEnabled) {
+		glEnable(GL_CULL_FACE);
+	}
+}
+
+void RenderCustomFramebuffer(Shader& shader, GLuint& VAO, GLuint& texture) {
+	// Don't apply face culling to default framebuffer
+	//		At the moment the default framebuffer is a quad, so culling faces doesn't make sense in this context
+	bool isCullingEnabled = glIsEnabled(GL_CULL_FACE);
+	if (isCullingEnabled) {
+		glDisable(GL_CULL_FACE);
+	}
+
+	shader.use();
+	glBindVertexArray(VAO);
+
+	glDisable(GL_DEPTH_TEST);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindVertexArray(0);
+
+	if (isCullingEnabled) {
+		glEnable(GL_CULL_FACE);
+	}
 }
 
 void RenderImGui(ImVec4* clear_color) {
