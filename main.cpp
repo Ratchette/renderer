@@ -28,13 +28,12 @@ const float SCREEN_HEIGHT = 900.0f;
 
 bool showImGui = false;
 static ImVec4 clear_color = ImVec4(0.07f, 0.11f, 0.11f, 1.0f);
-static glm::vec3 globalLightColour(0.455, 0.375, 0.824);
+static glm::vec3 globalLightColour(1.0);
 static glm::vec3 pointLightColour(0.584f, 0.475f, 0.173f);
-static glm::vec3 flashlightColour(1.0);
-static glm::vec3 outlineColour(0.0);
+static glm::vec3 flashlightColour(0.455, 0.375, 0.824);
 
 Camera camera;
-glm::vec3 lightDirection(-0.2f, -1.0f, -0.3f);
+glm::vec3 lightDirection(16.3, -11.0f, 20.0f);
 vector<glm::vec3> pointLightPositions = {
 	glm::vec3(0.7f,  0.2f,  2.0f),
 	glm::vec3(2.3f, 4.0f, 0.0f),
@@ -87,54 +86,61 @@ vector<float> cubeVertices = {
 	 -0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // bottom-left        
 };
 
+vector<float> skyboxVertices = {
+	// positions          
+	-1.0f,  1.0f, -1.0f,
+	-1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+
+	-1.0f, -1.0f,  1.0f,
+	-1.0f, -1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f, -1.0f,
+	-1.0f,  1.0f,  1.0f,
+	-1.0f, -1.0f,  1.0f,
+
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+
+	-1.0f, -1.0f,  1.0f,
+	-1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f, -1.0f,  1.0f,
+	-1.0f, -1.0f,  1.0f,
+
+	-1.0f,  1.0f, -1.0f,
+	 1.0f,  1.0f, -1.0f,
+	 1.0f,  1.0f,  1.0f,
+	 1.0f,  1.0f,  1.0f,
+	-1.0f,  1.0f,  1.0f,
+	-1.0f,  1.0f, -1.0f,
+
+	-1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f,  1.0f,
+	 1.0f, -1.0f, -1.0f,
+	 1.0f, -1.0f, -1.0f,
+	-1.0f, -1.0f,  1.0f,
+	 1.0f, -1.0f,  1.0f
+};
+vector<string> skyboxPaths = {
+	"assets/skybox/right.jpg",
+	"assets/skybox/left.jpg",
+	"assets/skybox/top.jpg",
+	"assets/skybox/bottom.jpg",
+	"assets/skybox/front.jpg",
+	"assets/skybox/back.jpg"
+};
 
 static float deltaTime = 0.0f;
 static float lastFrame = 0.0f;
-
-vector<float> floorVertices = {
-	// positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
-	 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-	-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
-	-5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
-
-	 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-	 5.0f, -0.5f, -5.0f,  2.0f, 2.0f,
-	- 5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
-};
-
-vector<float> quadVertices = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-	// positions			// texCoords
-	-1.0f,  1.0f,  0.0f,	0.0f, 1.0f,
-	-1.0f, -1.0f,  0.0f,	0.0f, 0.0f,
-	 1.0f, -1.0f,  0.0f,	1.0f, 0.0f,
-
-	-1.0f,  1.0f,  0.0f,	0.0f, 1.0f,
-	 1.0f, -1.0f,  0.0f,	1.0f, 0.0f,
-	 1.0f,  1.0f,  0.0f,	1.0f, 1.0f
-};
-
-vector<float> mirrorVertices = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-	// positions			// texCoords
-	-0.3f,  0.97f,  0.0f,	0.0f, 1.0f,
-	-0.3f,  0.67f,   0.0f,	0.0f, 0.0f,
-	 0.3f,  0.67f,   0.0f,	1.0f, 0.0f,
-
-	-0.3f,  0.97f,  0.0f,	0.0f, 1.0f,
-	 0.3f,  0.67f,   0.0f,	1.0f, 0.0f,
-	 0.3f,  0.97f,  0.0f,	1.0f, 1.0f
-};
-
-vector<float> mirrorBorderVertices = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-	// positions			// texCoords
-	-0.33f,  1.0f,   0.0f,	0.0f, 1.0f,
-	-0.33f,  0.64f,  0.0f,	0.0f, 0.0f,
-	 0.33f,  0.64f,  0.0f,	1.0f, 0.0f,
-
-	-0.33f,  1.0f,   0.0f,	0.0f, 1.0f,
-	 0.33f,  0.64f,  0.0f,	1.0f, 0.0f,
-	 0.33f,  1.0f,   0.0f,	1.0f, 1.0f
-};
-
 
 
 static void glfw_error_callback(int error, const char* description);
@@ -144,18 +150,24 @@ void glfw_mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void glfw_scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
 
 GLFWwindow* InitWindow();
-void InitVertices(GLuint& VAO, vector<float> vertices);
+void InitVertices(GLuint& VAO, vector<float> vertices, int numAttrs);
 void InitCustomFramebuffer(GLuint& framebuffer, GLuint& textureColorBuffer);
+
+unsigned int LoadTexture(char const* path);
+unsigned int LoadSkybox(vector<string> faces);
+
 void InitFloorShader(Shader* shader);
 void InitPointLightsShader(Shader* shader);
 void InitGuitarShader(Shader* shader);
-unsigned int LoadTexture(char const* path);
+void InitSkyboxShader(Shader* shader);
+
 
 void RenderFloor(Shader& shader, GLuint& VAO, GLuint& texture);
 void RenderPointLights(Shader& shader, GLuint& VAO);
 void RenderGuitar(Shader& shader, Model& model);
 void RenderOutline(Shader& shader, GLuint& VAO, glm::vec3& colour);
 void RenderCustomFramebuffer(Shader& shader, GLuint& VAO, GLuint& texture);
+void RenderSkybox(Shader& shader, GLuint& VAO, GLuint& texture);
 
 void InitImGUI(GLFWwindow** window);
 void RenderImGui(ImVec4* clear_color);
@@ -166,37 +178,24 @@ int main() {
 	window = InitWindow();
 	assert(window);
 
-	Shader floorShader("shaders/basic.vert", "shaders/basic_texture.frag");
-	unsigned int floorTexture = LoadTexture("assets/metal.png");
-	floorShader.setInt("texture0", 0);
-
 	Shader lightsShader("shaders/basic.vert", "shaders/basic_colour.frag");
 
 	Shader guitarShader("shaders/backpack.vert", "shaders/backpack.frag");
 	Model guitarModel("models/backpack/backpack.obj");
 
-	Shader quadShader("shaders/quad.vert", "shaders/quad.frag");
-	Shader borderShader("shaders/quad.vert", "shaders/basic_colour.frag");
-	Shader mirrorShader("shaders/mirror.vert", "shaders/mirror.frag");
-	mirrorShader.setFloat("screen_width", SCREEN_WIDTH);
+	Shader skyboxShader("shaders/skybox.vert", "shaders/skybox.frag");
+	unsigned int skyboxTexture = LoadSkybox(skyboxPaths);
 
 	double curX;
 	double curY;
 	glfwGetCursorPos(window, &curX, &curY);
 	camera.Init(static_cast<float>(curX), static_cast<float>(curY));
 
-	GLuint floorVAO, lightsVAO, quadVAO, mirrorVAO, mirrorBorderVAO;
-	InitVertices(floorVAO, floorVertices);
-	InitVertices(lightsVAO, cubeVertices);
-	InitVertices(quadVAO, quadVertices);
+	GLuint lightsVAO, skyboxVAO;
+	InitVertices(lightsVAO, cubeVertices, 5);
+	InitVertices(skyboxVAO, skyboxVertices, 3);
 
-	InitVertices(mirrorVAO, mirrorVertices);
-	InitVertices(mirrorBorderVAO, mirrorBorderVertices);
-
-	GLuint framebuffer, textureColorBuffer;
-	InitCustomFramebuffer(framebuffer, textureColorBuffer);
-
-	InitFloorShader(&floorShader);
+	InitSkyboxShader(&skyboxShader);
 	InitPointLightsShader(&lightsShader);
 	InitGuitarShader(&guitarShader);
 	InitImGUI(&window);
@@ -212,25 +211,14 @@ int main() {
 		camera.Update(deltaTime);
 
 		// Render to custom framebuffer
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 		glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 		
 		// Draw Scene
-		RenderFloor(floorShader, floorVAO, floorTexture);
 		RenderPointLights(lightsShader, lightsVAO);
 		RenderGuitar(guitarShader, guitarModel);
-
-		// Render custom framebuffer to default framebuffer without modification
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-		RenderCustomFramebuffer(quadShader, quadVAO, textureColorBuffer);
-
-		// Render a mirror image of the custom framebuffer to the top of the default framebuffer
-		RenderOutline(borderShader, mirrorBorderVAO, outlineColour);
-		RenderCustomFramebuffer(mirrorShader, mirrorVAO, textureColorBuffer);
+		RenderSkybox(skyboxShader, skyboxVAO, skyboxTexture);
 
 		RenderImGui(&clear_color);
 
@@ -296,7 +284,7 @@ void InitImGUI(GLFWwindow** window) {
 	ImGui_ImplOpenGL3_Init(glsl_version);
 }
 
-void InitVertices(GLuint& VAO, vector<float> vertices) {
+void InitVertices(GLuint& VAO, vector<float> vertices, int numAttrs) {
 	GLuint VBO;
 
 	glGenVertexArrays(1, &VAO);
@@ -309,11 +297,13 @@ void InitVertices(GLuint& VAO, vector<float> vertices) {
 
 	// Vertex positions
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, numAttrs * sizeof(float), (void*)0);
 
-	// Texture coordinates
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	if (numAttrs > 3) {
+		// Texture coordinates
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, numAttrs * sizeof(float), (void*)(3 * sizeof(float)));
+	}
 
 	glBindVertexArray(0);
 }
@@ -379,7 +369,7 @@ void InitGuitarShader(Shader* shader) {
 
 	shader->setFloat("specular_shininess", 32.0f);
 
-	shader->setVec3("directionalLight.direction", -0.2f, -1.0f, -0.3f);
+	shader->setVec3("directionalLight.direction", lightDirection);
 	shader->setVec3("directionalLight.ambient", globalLightColour * 0.05f);
 	shader->setVec3("directionalLight.diffuse", globalLightColour * 0.6f);
 	shader->setVec3("directionalLight.specular", globalLightColour);
@@ -425,6 +415,13 @@ void InitGuitarShader(Shader* shader) {
 	shader->setFloat("spotLight.outerCutoff", static_cast<float>(glm::cos(glm::radians(17.5))));
 
 	shader->setVec3("viewerPosition", camera.GetPosition());
+}
+
+void InitSkyboxShader(Shader* shader) {
+	shader->use();
+	
+	shader->setMat4("viewTransform", glm::mat4(glm::mat3(camera.GetViewMatrix())));
+	shader->setMat4("perspectiveTransform", camera.GetProjectionMatrix());
 }
 
 void RenderFloor(Shader& shader, GLuint& VAO, GLuint& texture) {
@@ -549,6 +546,20 @@ void RenderCustomFramebuffer(Shader& shader, GLuint& VAO, GLuint& texture) {
 	}
 }
 
+void RenderSkybox(Shader& shader, GLuint& VAO, GLuint& texture) {
+	glDepthFunc(GL_LEQUAL);
+	shader.use();
+	glBindVertexArray(VAO);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+
+	shader.setMat4("viewTransform", glm::mat4(glm::mat3(camera.GetViewMatrix())));
+	shader.setMat4("perspectiveTransform", camera.GetProjectionMatrix());
+
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glBindVertexArray(0);
+	glDepthFunc(GL_LESS);
+}
+
 void RenderImGui(ImVec4* clear_color) {
 	static float texture_mix = 0.2f;
 
@@ -567,7 +578,6 @@ void RenderImGui(ImVec4* clear_color) {
 				ImGui::ColorEdit3("Directional light", &globalLightColour[0]);
 				ImGui::ColorEdit3("Point lights", &pointLightColour[0]);
 				ImGui::ColorEdit3("Flashlight", &flashlightColour[0]);
-				ImGui::ColorEdit3("Outline colour", &outlineColour[0]);
 			}
 
 			if (ImGui::CollapsingHeader("Culling")) {
@@ -606,14 +616,12 @@ unsigned int LoadTexture(char const* path) {
 	unsigned int textureID;
 	glGenTextures(1, &textureID);
 
-	/*stbi_set_flip_vertically_on_load(true);*/
+	stbi_set_flip_vertically_on_load(false);
 	int width, height, nrComponents;
 	unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
 	if (data) {
-		GLenum format;
-		if (nrComponents == 1)
-			format = GL_RED;
-		else if (nrComponents == 3)
+		GLenum format = GL_RED;
+		if (nrComponents == 3)
 			format = GL_RGB;
 		else if (nrComponents == 4)
 			format = GL_RGBA;
@@ -637,6 +645,33 @@ unsigned int LoadTexture(char const* path) {
 	return textureID;
 }
 
+unsigned int LoadSkybox(vector<string> faces) {
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	stbi_set_flip_vertically_on_load(false);
+	int width, height, nrComponents;
+
+	for (int i = 0; i < faces.size(); ++i) {
+		unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrComponents, 0);
+		if (data) {
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			stbi_image_free(data);
+		} else {
+			std::cout << "Cubemap failed to load at path: " << faces[i] << std::endl;
+			stbi_image_free(data);
+		}
+	}
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	return textureID;
+}
 
 /****************************************************************
  *	Callbacks
